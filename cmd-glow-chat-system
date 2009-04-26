@@ -1,0 +1,517 @@
+wh me=Beginning installation of cmd-mucknet
+@prog cmd-mucknet
+1 99999 d
+1 i
+( cmd-mucknet: $Date$ $Revision$                 )
+( Purpose: Provides a muckwide chat network                                   )
+( Author: Feaelin Moilar                                                      )
+( Contributors:                                                               )
+( Dependencies: lib-strings, lib-edit, lib-case                               )
+( --------------------------------------------------------------------------- )
+(
+  $Log$
+)
+( --------------------------------------------------------------------------- )
+ 
+$include $lib/strings
+$include $lib/edit
+$include $lib/case
+ 
+( While I have this set to 'prog' so that the channels are stored on the      )
+( program and thereby the same muckwide, it could be set to 'trigger @' which )
+( would store them on the triggering action, making it possible to have area  )
+( specific channels.                                                          )
+$def DBITEM     prog
+$def CHANNELDIR "/Channels/"
+$def ALIASDIR   "/Aliases/" 
+
+$def SPACES "                                                                                "
+ 
+: print-header ( -- )
+  "Muckwide Chat Network" 80 over strlen -
+  "$Revision: 1.83 $" 11 strcut swap pop dup strlen 2 - strcut pop
+  "Release: " swap strcat
+  swap over strlen - SPACES swap strcut pop swap strcat strcat
+  "--------------------------------------------------------------------------------"
+  2 EDIT-ansi_display
+;
+ 
+: getNetSeparator ( -- S-Separator )
+  DBITEM "/NetSeparator" getpropstr
+;
+ 
+: getShortName ( S-Alias -- S-ShortName )
+  DBITEM ALIASDIR command @ strcat getpropstr
+;
+ 
+: getActive ( S-ShortName -- S-Active )
+  DBITEM CHANNELDIR rot strcat getpropstr
+;
+ 
+: getNetColor ( S-ShortName -- S-NetColor )
+  DBITEM CHANNELDIR rot strcat "/NetColor" strcat getpropstr
+;
+ 
+: getAliases ( S-ShortName -- S-AliasList )
+  DBITEM CHANNELDIR rot strcat "/Aliases" strcat getpropstr
+;
+ 
+: getMessageColor ( S-ShortName -- S-MessageColor )
+  DBITEM CHANNELDIR rot strcat "/MessageColor" strcat getpropstr
+;
+ 
+: getFullName ( S-ShortName -- S-FullName )
+  DBITEM CHANNELDIR rot strcat "/Name" strcat getpropstr
+;
+ 
+: getGuestTalk ( S-ShortName -- B-GuestTalk )
+  DBITEM CHANNELDIR rot strcat "/GuestTalk" strcat getpropval
+;
+ 
+: getZombieTalk ( S-ShortName -- B-ZombieTalk )
+  DBITEM CHANNELDIR rot strcat "/ZombieTalk" strcat getpropval
+;
+
+: getLevelTalk ( S-ShortName -- I-LevelListen )
+  DBITEM CHANNELDIR rot strcat "/LevelListen" strcat getpropval
+;
+ 
+: getGuestListen ( S-ShortName -- B-GuestListen )
+  DBITEM CHANNELDIR rot strcat "/GuestListen" strcat getpropval
+;
+ 
+: getZombieListen ( S-ShortName -- B-ZombieListen )
+  DBITEM CHANNELDIR rot strcat "/ZombieListen" strcat getpropval
+;
+
+: getLevelListen ( S-ShortName -- I-LevelListen )
+  DBITEM CHANNELDIR rot strcat "/LevelListen" strcat getpropval
+;
+ 
+: getOptStatus ( S-ShortName -- S-OptStatus )
+  DBITEM CHANNELDIR rot strcat "/OptInOut" strcat getpropstr
+;
+ 
+: getOptList ( S-ShortName -- S-OptList )
+  DBITEM CHANNELDIR rot strcat "/OptList" strcat getpropstr
+;
+ 
+: print-help ( -- )
+  print-header
+;
+
+: NotifyPlayer ( D-player S-message -- )
+  getShortName getNetColor getShortName strcat
+  getNetSeparator strcat " " strcat
+  getShortName getMessageColor strcat me @ name strcat
+  over 1 strcut pop
+  ":;" swap instr if ( pose? )
+    swap 1 strcut swap pop swap
+    over 1 strcut pop
+    "abcdefghijklmnopqrstuvwxyz" swap
+    instr if ( does it start with a letter? )
+      " " strcat  swap strcat
+    else
+      swap strcat
+    then
+  else
+    " says, \"" strcat swap strcat "\"" strcat
+  then
+  ansi_notify
+;
+ 
+: canListen? ( D-player  -- bool )
+  dup "GUEST" flag? if
+    getShortName getGuestListen not if
+      pop 0 exit
+    then
+  then
+  dup player? not if
+   ( thing+zombie+zombie is still allowed )
+    dup thing? if
+      dup "ZOMBIE" flag? if
+        getShortName getZombieListen not if
+          pop 0 exit
+        then
+      else
+        pop 0 exit
+      then
+    else
+      pop 0 exit
+    then
+  then
+  getShortName getLevelListen
+  over mlevel > if
+    pop 0 exit
+  then
+  pop 1
+;
+ 
+: Talk ( S-message -- )
+  online dup 2 + rotate ( connected-RNG S-message )
+  getShortName "" ( connected-RNG S-message S-Channel S-sent )
+  BEGIN
+    dup "#" 7 pick intostr strcat "#" strcat ( connected-RNG S-message S-Channel S-sent S-sent S-current )
+    instr not if ( connected-RNG S-message S-Channel S-sent )
+      "#" strcat 5 pick intostr strcat "#" strcat ( connected-RNG S-message S-Channel S-sent )
+      5 pick canListen? if
+        ( Is the channel Opt-In, or Opt-Out? )
+        getShortName getOptStatus
+        "I" strcmp not if
+          getShortName getOptList ( connected-RNG S-message S-Channel S-sent S-OptList )
+          "#" 7 pick intostr strcat "#" strcat ( connected-RNG S-message S-Channel S-sent S-OptList S-current )
+          instr if ( connected-RNG S-message S-Channel S-sent )
+            5 pick 4 pick NotifyPlayer
+          then
+        else ( optstatus )
+          getShortName getOptList ( connected-RNG S-message S-Channel S-sent S-OptList )
+          "#" 7 pick intostr strcat "#" strcat ( connected-RNG S-message S-Channel S-sent S-OptList S-current )
+          instr not if ( connected-RNG S-message S-Channel S-sent )
+            5 pick 4 pick NotifyPlayer
+          then
+        then ( optstatus )
+      then ( canListen )
+    then ( uniqueness test )
+    5 rotate pop
+    4 pick 1 - dup 5 put
+    0 =
+  UNTIL
+  4 popn
+;
+ 
+: canTalk? ( -- bool )
+  getShortName 
+  dup STR-blank? if
+    pop
+    me @ "^FAIL^Invalid channel alias ^MOVE^'"
+    command @ strcat "'^FAIL^." strcat ansi_notify
+    0 exit
+  then
+  dup getActive
+  dup STR-blank? if
+    pop
+    me @ "^FAIL^Channel alias ^MOVE^'" command @ strcat
+    "^MOVE^'^FAIL^ is not bound to a channel." strcat ansi_notify
+    0 exit
+  then
+  "Inactive" strcmp not if
+    me @ "^FAIL^Sorry, the ^MOVE^" rot getFullName
+    strcat "^FAIL^ is disabled." strcat ansi_notify
+    0 exit
+  then
+  me @ "GUEST" flag? if
+    dup getGuestTalk not if
+      me @ "^FAIL^The ^MOVE^" rot getFullName strcat
+      "^FAIL^ does not allow guest characters to talk." strcat ansi_notify
+      0 exit
+    then
+  then
+  me @ player? not if
+   ( thing+zombie+zombieTalk is still allowed )
+    me @ thing? if
+      me @ "ZOMBIE" flag? if
+        dup getZombieTalk not if
+          me @ "^FAIL^The ^MOVE^" rot getFullName strcat
+          "^FAIL^ does not allow zombie characters to talk." strcat ansi_notify
+          0 exit
+        then
+      else
+        pop
+        me @ "^FAIL^Permission Denied." ansi_notify
+        0 exit
+      then
+    else
+      pop
+      me @ "^FAIL^Permission Denied." ansi_notify
+      0 exit
+    then
+  then
+  dup getLevelTalk
+  me @ mlevel > if
+    me @ "^FAIL^Insufficient mucker/wizard level to talk on the ^MOVE^"
+    rot getFullName strcat "^FAIL^." strcat ansi_notify
+    0 exit
+  then
+  ( Someday, do group permissions here )
+
+  ( Wow...passed all of it? )
+  pop
+  1
+;
+ 
+( NOTE: I need this word, and I need /add to query for zombietalk, guesttalk, levellisten, zombielisten, guestlisten )
+(       also, we need a query for the chat prefix and a way to set the >>> type symbol. )
+( we need a name, a command, a mlevel and optionally group )
+: add-channel-query ( -- )
+  print-header
+  me @ "^SUCC^MCN Channel Add" ansi_notify
+  me @ " " ansi_notify
+  ( Loop until we get a valid response )
+  ""
+  BEGIN
+    pop
+    me @
+    "^INFO^Enter a name for this channel (e.g. Public Chat Network) or enter ^MOVE^C^INFO^ to cancel:"
+    ansi_notify
+    read
+    dup STR-blank? not
+  UNTIL
+  dup "C" strcmp not if
+    pop
+    me @ "^FAIL^Canceled." ansi_notify 
+    exit
+  then
+  me @ " " ansi_notify
+  ""
+  BEGIN
+    pop
+    me @
+    "^INFO^Enter a SHORT name for this channel (e.g. Public) or enter ^MOVE^C^INFO^ to cancel:"
+    ansi_notify
+    read
+    dup STR-blank? not
+  UNTIL
+  dup "C" strcmp not if
+    2 popn
+    me @ "^FAIL^Canceled." ansi_notify 
+    exit
+  then
+  me @ " " ansi_notify
+  ""
+  BEGIN
+    pop
+    me @
+    "^INFO^Enter the color for the network name (e.g. GREEN) or enter ^MOVE^C^INFO^ to cancel:"
+    ansi_notify
+    read
+    dup STR-blank? not
+  UNTIL
+  dup "C" strcmp not if
+    2 popn
+    me @ "^FAIL^Canceled." ansi_notify 
+    exit
+  then
+  "" "^" subst toupper "^" swap strcat "^" strcat
+  me @ " " ansi_notify
+  ""
+  BEGIN
+    pop
+    me @
+    "^INFO^Enter the color for the network messages (e.g. WHITE) or enter ^MOVE^C^INFO^ to cancel:"
+    ansi_notify
+    read
+    dup STR-blank? not
+  UNTIL
+  dup "C" strcmp not if
+    2 popn
+    me @ "^FAIL^Canceled." ansi_notify 
+    exit
+  then
+  "" "^" subst toupper "^" swap strcat "^" strcat
+  me @ " " ansi_notify
+  me @
+  "^NOTE^NOTE: Any command longer than three characters will have the short versions of"
+  ansi_notify
+  me @
+  "^NOTE^the name added (e.g. public becomes public;publi;publ;pub)."
+  ansi_notify
+  me @ " " ansi_notify
+  ""
+  BEGIN
+    pop
+    me @
+    "^INFO^Enter an command alias list for this channel, each command alias separated by"
+    ansi_notify
+    me @
+    "^INFO^a semi-colon with no spaces (e.g. public;publicchat;...), or enter ^MOVE^C^INFO^ to cancel:"
+    ansi_notify
+    read
+    dup STR-blank? not
+  UNTIL
+  dup "C" strcmp not if
+    3 popn
+    me @ "^FAIL^Canceled." ansi_notify
+    exit
+  then
+  ";" explode
+  "`@`" swap 1 + -1 * rotate
+  ""
+  BEGIN
+    swap
+    BEGIN dup strlen 2 > WHILE
+      trig name over instr if
+        me @ "^FAIL^Sorry, '" rot strcat "' already exists, canceled."
+        strcat ansi_notify
+        4 popn
+        exit
+      then
+      swap over strcat ";" strcat swap
+      dup strlen 1 - strcut pop
+    REPEAT
+    pop
+    over "`@`" strcmp not
+  UNTIL
+  swap pop dup strlen 1 - strcut pop
+  me @ "^SUCC^The complete alias list will be: " 3 pick strcat "." strcat
+  ansi_notify
+  me @ " " ansi_notify
+  ""
+  BEGIN
+    pop
+    me @
+    "^INFO^Enter the required m-level to talk on this channel (^MOVE^0^INFO^ for everyone, ^MOVE^C^INFO^ to cancel): "
+    ansi_notify
+    read
+    dup STR-blank? not
+  UNTIL
+  dup "C" strcmp not if
+    4 popn
+    me @ "^FAIL^Canceled." ansi_notify 
+    exit
+  then
+  me @ " " ansi_notify
+  me @
+  "^NOTE^NOTE: Opt-out means that all players are listening to the channel by default,"
+  ansi_notify
+  me @
+  "^NOTE^and opt-in means that the the players must join before they can hear the channel."
+  ansi_notify
+  ""
+  BEGIN
+    pop
+    me @
+    "^INFO^Enter I for Opt-In, O for Opt-Out, or C for cancel:"
+    ansi_notify
+    read
+    dup "I" strcmp over "O" strcmp and not
+  UNTIL
+  dup "C" strcmp not if
+    4 popn
+    me @ "^FAIL^Canceled." ansi_notify 
+    exit
+  then
+  prog CHANNELDIR 8 pick strcat "Active" setprop
+  prog CHANNELDIR 8 pick strcat "/OptInOut" strcat rot setprop
+  prog CHANNELDIR 7 pick strcat "/LevelTalk" strcat rot atoi setprop
+  prog CHANNELDIR 6 pick strcat "/MessageColor" strcat 4 rotate setprop
+  prog CHANNELDIR 5 pick strcat "/NetColor" strcat 4 rotate setprop
+  prog CHANNELDIR 4 pick strcat "/Name" strcat 5 rotate setprop
+  prog CHANNELDIR 4 pick strcat "/Aliases" strcat 3 pick setprop
+  swap over ";" explode ( S-aliases S-shortname RNG-aliases )
+  BEGIN
+    swap ( S-aliases S-shortname RNG-aliases topalias )
+    prog ALIASDIR rot strcat ( S-aliases S-shortname RNG-aliases D-prog S-prop )
+    3 pick 3 + pick ( S-aliases S-shortname RNG-aliases D-prog S-prop S-shortname )
+    setprop
+    1 - dup not ( S-aliases S-shortname RNG-aliases bool )
+  UNTIL
+  pop
+  prog CHANNELDIR 3 pick strcat "/ShortName" strcat rot setprop
+  trig name ";" strcat swap strcat trig swap setname
+  me @ "^SUCC^Channel Added." ansi_notify
+;
+ 
+: set-default ( s -- )
+  prog CHANNELDIR 3 pick strcat getpropstr STR-blank? if
+    pop
+    me @ "^FAIL^Channel not found." ansi_notify
+    exit
+  then
+  prog "Default" rot setprop
+;
+ 
+: menu-header ( S-MenuName -- )
+  "^WHITE^------------------------------------------------------------------------^RESET^"
+  "^GREEN^  Glow Chat System                                        ^FOREST^" 
+  "$Revision: 1.10 $" 1 strcut swap pop dup strlen 1 - strcut pop strcat
+  ": ^YELLOW^" ": " subst
+  "^FOREST^  By Feaelin Moilar (Iain E. Davis)                  ^YELLOW^"
+  4 rotate dup strlen 19 swap - "                   " 
+  swap strcut pop swap strcat strcat "^RESET^" strcat
+  "^WHITE^------------------------------------------------------------------------^RESET^"
+  4 EDIT-ansi_display
+;
+ 
+: channel-editor ( S-ShortName -- )
+  BEGIN
+    "CHANNEL-EDIT" menu-header
+    " ^YELLOW^1. ^WHITE^Channel Short Name: ^YELLOW^"
+    2 pick strcat "^RESET^" strcat
+    " ^YELLOW^2. ^WHITE^Channel Full Name: ^YELLOW^"
+    3 pick getFullName strcat "^RESET^" strcat
+    " ^YELLOW^3. ^WHITE^Channel Aliases: ^YELLOW^"
+    4 pick getAliases strcat "^RESET^" strcat
+    " ^YELLOW^4. ^WHITE^Opt-In/Opt-Out: ^YELLOW^"
+    5 pick getOptStatus strcat "^RESET^" strcat
+    " ^YELLOW^5. ^WHITE^Network Identifier Color: ^YELLOW^"
+    6 pick getNetColor "^^" "^" subst
+    strcat "^RESET^" strcat
+    " ^YELLOW^6. ^WHITE^Network Message Color: ^YELLOW^"
+    7 pick getMessageColor "^^" "^" subst
+    strcat "^RESET^" strcat
+    " ^YELLOW^7. ^WHITE^Edit Permissions^RESET^"
+    " ^YELLOW^Q. ^WHITE^Quit Menu^RESET^"
+    " ^YELLOW^E. ^WHITE^Exit Channel Editor^RESET^"
+    9 EDIT-ansi_display
+    read tolower
+    case
+      "q" strcmp not when exit end
+      "e" strcmp not when
+        me @ "^SUCC^Channel Editor Exited." ansi_notify
+        exit
+      end
+(      "1" strcmp not when sys-config-menu end
+      "2" strcmp not when View-Log 0 end )
+      default me @ "^FAIL^Invalid Option!" ansi_notify 0 end
+    endcase
+  UNTIL
+  me @ "^SUCC^Channel Editor Exited." ansi_notify
+; 
+  
+: main
+  dup STR-blank? if
+    pop print-help exit
+  then
+  dup STR-command dup "" strcmp not if
+    pop
+    canTalk? if
+      Talk ( output to appropiate channel )
+    else
+      pop
+    then
+    exit
+  then
+  swap pop
+  STR-splitargs swap
+  dup "help" strcmp not if
+    pop pop print-help exit
+  then
+  dup "add" strcmp not if
+    pop pop
+    me @ "MAGE" flag? if
+      add-channel-query
+    else
+      print-help
+    then
+    exit
+  then
+  dup "default" strcmp not if
+    pop
+    me @ "MAGE" flag? if
+      set-default
+    else
+      pop print-help
+    then
+    exit
+  then
+  pop
+  print-help
+;
+
+: m2
+  channel-editor
+;
+.
+c
+q
+@register cmd-mucknet=cmd/mucknet
