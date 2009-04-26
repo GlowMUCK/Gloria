@@ -1,15 +1,18 @@
-wh me=Beginning installation of cmd-mucknet
-@prog cmd-mucknet
+wh me=Beginning installation of cmd-glow-chat-system
+@prog cmd-glow-chat-system
 1 99999 d
 1 i
-( cmd-mucknet: $Date$ $Revision$                 )
+( cmd-chat-system: $Date: 2009/04/26 14:25:08 $ $Revision: 1.1 $             )
 ( Purpose: Provides a muckwide chat network                                   )
 ( Author: Feaelin Moilar                                                      )
 ( Contributors:                                                               )
 ( Dependencies: lib-strings, lib-edit, lib-case                               )
 ( --------------------------------------------------------------------------- )
 (
-  $Log$
+  $Log: cmd-glow-chat-system,v $
+  Revision 1.1  2009/04/26 14:25:08  feaelin
+  Initial revision
+
 )
 ( --------------------------------------------------------------------------- )
  
@@ -29,7 +32,7 @@ $def SPACES "                                                                   
  
 : print-header ( -- )
   "Muckwide Chat Network" 80 over strlen -
-  "$Revision: 1.83 $" 11 strcut swap pop dup strlen 2 - strcut pop
+  "$Revision: 1.1 $" 11 strcut swap pop dup strlen 2 - strcut pop
   "Release: " swap strcat
   swap over strlen - SPACES swap strcut pop swap strcat strcat
   "--------------------------------------------------------------------------------"
@@ -423,7 +426,7 @@ $def SPACES "                                                                   
 : menu-header ( S-MenuName -- )
   "^WHITE^------------------------------------------------------------------------^RESET^"
   "^GREEN^  Glow Chat System                                        ^FOREST^" 
-  "$Revision: 1.10 $" 1 strcut swap pop dup strlen 1 - strcut pop strcat
+  "$Revision: 1.1 $" 1 strcut swap pop dup strlen 1 - strcut pop strcat
   ": ^YELLOW^" ": " subst
   "^FOREST^  By Feaelin Moilar (Iain E. Davis)                  ^YELLOW^"
   4 rotate dup strlen 19 swap - "                   " 
@@ -514,4 +517,4 @@ $def SPACES "                                                                   
 .
 c
 q
-@register cmd-mucknet=cmd/mucknet
+@register cmd-glow-chat-system=cmd/glow-chat-system
