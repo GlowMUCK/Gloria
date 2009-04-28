@@ -2,7 +2,7 @@ wh me=Beginning installation of cmd-glow-chat-system
 @prog cmd-glow-chat-system
 1 99999 d
 1 i
-( cmd-chat-system: $Date: 2009/04/28 16:55:54 $ $Revision: 1.3 $             )
+( cmd-chat-system: $Date: 2009/04/28 17:15:13 $ $Revision: 1.4 $             )
 ( Purpose: Provides a muckwide chat network                                   )
 ( Author: Feaelin Moilar                                                      )
 ( Contributors:                                                               )
@@ -10,6 +10,10 @@ wh me=Beginning installation of cmd-glow-chat-system
 ( --------------------------------------------------------------------------- )
 (
   $Log: cmd-glow-chat-system,v $
+  Revision 1.4  2009/04/28 17:15:13  feaelin
+  Removed vestigial prompted channel edit
+  Added code to channel editor so that the exit name/alias list is updated.
+
   Revision 1.3  2009/04/28 16:55:54  feaelin
   Completed add menu.
 
@@ -126,20 +130,56 @@ $def ALIASDIR   "/Aliases/"
   DBITEM CHANNELDIR rot strcat "/GuestTalk" strcat getpropval
 ;
  
-: getZombieTalk ( S-ShortName -- B-ZombieTalk )
-  DBITEM CHANNELDIR rot strcat "/ZombieTalk" strcat getpropval
-;
- 
-: getLevelTalk ( S-ShortName -- I-LevelListen )
-  DBITEM CHANNELDIR rot strcat "/LevelListen" strcat getpropval
+: toggleGuestTalk ( S-ShortName -- )
+  CHANNELDIR swap strcat "/GuestTalk" strcat 
+  dup DBITEM swap getpropval if
+    DBITEM swap 0 setprop
+  else
+    DBITEM swap 1 setprop
+  then
 ;
  
 : getGuestListen ( S-ShortName -- B-GuestListen )
   DBITEM CHANNELDIR rot strcat "/GuestListen" strcat getpropval
 ;
  
+: toggleGuestListen ( S-ShortName -- )
+  CHANNELDIR swap strcat "/GuestListen" strcat 
+  dup DBITEM swap getpropval if
+    DBITEM swap 0 setprop
+  else
+    DBITEM swap 1 setprop
+  then
+;
+ 
+: getZombieTalk ( S-ShortName -- B-ZombieTalk )
+  DBITEM CHANNELDIR rot strcat "/ZombieTalk" strcat getpropval
+;
+ 
+: toggleZombieTalk ( S-ShortName -- )
+  CHANNELDIR swap strcat "/ZombieTalk" strcat 
+  dup DBITEM swap getpropval if
+    DBITEM swap 0 setprop
+  else
+    DBITEM swap 1 setprop
+  then
+;
+ 
 : getZombieListen ( S-ShortName -- B-ZombieListen )
   DBITEM CHANNELDIR rot strcat "/ZombieListen" strcat getpropval
+;
+ 
+: toggleZombieListen ( S-ShortName -- )
+  CHANNELDIR swap strcat "/ZombieListen" strcat 
+  dup DBITEM swap getpropval if
+    DBITEM swap 0 setprop
+  else
+    DBITEM swap 1 setprop
+  then
+;
+ 
+: getLevelTalk ( S-ShortName -- I-LevelListen )
+  DBITEM CHANNELDIR rot strcat "/LevelListen" strcat getpropval
 ;
  
 : getLevelListen ( S-ShortName -- I-LevelListen )
@@ -153,7 +193,7 @@ $def ALIASDIR   "/Aliases/"
 : menu-header ( S-MenuName -- )
   "^WHITE^------------------------------------------------------------------------^RESET^"
   "^GREEN^  Glow Chat System                                        ^FOREST^" 
-  "$Revision: 1.3 $" 1 strcut swap pop dup strlen 1 - strcut pop strcat
+  "$Revision: 1.4 $" 1 strcut swap pop dup strlen 1 - strcut pop strcat
   ": ^YELLOW^" ": " subst
   "^FOREST^  By Feaelin Moilar (Iain E. Davis)                  ^YELLOW^"
   4 rotate dup strlen 19 swap - "                   " 
@@ -559,29 +599,92 @@ $def ALIASDIR   "/Aliases/"
 ;
  
 ( channel-editor: menu for editing general channel settings )
+: menu-channel-permissions ( S-ShortName -- )
+  BEGIN
+    "CHANNEL-EDIT" menu-header
+    " ^INFO^1. ^WHITE^Guests can Talk:            ^MOVE^"
+    2 pick getGuestTalk if
+      "Yes"
+    else
+      "No"
+    then
+    strcat
+    " ^INFO^2. ^WHITE^Guests can Listen:          ^MOVE^"
+    3 pick getGuestListen if
+      "Yes"
+    else
+      "No"
+    then
+    strcat
+    " ^INFO^3. ^WHITE^Zombies can Talk:           ^MOVE^"
+    4 pick getZombieTalk if
+      "Yes"
+    else
+      "No"
+    then
+    strcat
+    " ^INFO^4. ^WHITE^Zombies can Listen:         ^MOVE^"
+    5 pick getZombieListen if
+      "Yes"
+    else
+      "No"
+    then
+    strcat
+    " ^INFO^5. ^WHITE^Required M-Level to Talk:   ^MOVE^"
+    6 pick getLevelTalk intostr strcat
+    " ^INFO^6. ^WHITE^Required M-Level to Listen: ^MOVE^"
+    7 pick getLevelListen intostr strcat
+    " ^INFO^Q. ^WHITE^Quit Menu"
+    " ^INFO^E. ^WHITE^Exit Menu System"
+    8 EDIT-ansi_display
+    read tolower
+    case
+      "q" strcmp not when
+        me @ "^SUCC^Channel Permissions Editor Exited." ansi_notify     
+        0 exit
+      end
+      "e" strcmp not when
+        me @ "^SUCC^Channel Permissions Editor Exited." ansi_notify
+        1 exit
+      end
+      "1" strcmp not when dup toggleGuestTalk 0 end
+      "2" strcmp not when dup toggleGuestListen 0 end
+      "3" strcmp not when dup toggleZombieTalk 0 end
+      "4" strcmp not when dup toggleZombieListen 0 end
+      ("5" strcmp not when dup id-color-query 0 end
+      "6" strcmp not when dup msg-color-query 0 end
+      "7" strcmp not when dup status-toggle 0 end)
+      default pop me @ "^FAIL^Invalid Option!" ansi_notify 0 end
+    endcase
+  UNTIL
+  pop 0
+  me @ "^SUCC^Channel Permissions Editor Exited." ansi_notify
+; 
+ 
+( channel-editor: menu for editing general channel settings )
 : channel-editor ( S-ShortName -- )
   BEGIN
     "CHANNEL-EDIT" menu-header
-    " ^INFO^1. ^WHITE^Channel Short Name: ^MOVE^"
+    " ^INFO^1. ^WHITE^Channel Short Name:    ^MOVE^"
     2 pick strcat
-    " ^INFO^2. ^WHITE^Channel Full Name: ^MOVE^"
+    " ^INFO^2. ^WHITE^Channel Full Name:     ^MOVE^"
     3 pick getFullName strcat
-    " ^INFO^3. ^WHITE^Channel Aliases: ^MOVE^"
+    " ^INFO^3. ^WHITE^Channel Aliases:       ^MOVE^"
     4 pick getAliases strcat
-    " ^INFO^4. ^WHITE^Opt-In/Opt-Out: ^MOVE^"
+    " ^INFO^4. ^WHITE^Opt-In/Opt-Out:        ^MOVE^"
     5 pick getOptStatus strcat
-    " ^INFO^5. ^WHITE^Network Identifier Color: ^MOVE^"
+    " ^INFO^5. ^WHITE^Network ID Color:      ^MOVE^"
     6 pick getNetColor "^^" "^" subst
     strcat
     " ^INFO^6. ^WHITE^Network Message Color: ^MOVE^"
     7 pick getMessageColor "^^" "^" subst
     strcat
-    " ^INFO^7. ^WHITE^Channel Status: ^MOVE^"
+    " ^INFO^7. ^WHITE^Channel Status:        ^MOVE^"
     8 pick getActive strcat
     " ^INFO^8. ^WHITE^Edit Permissions"
     " ^INFO^9. ^WHITE^Edit Optee List"
     " ^INFO^Q. ^WHITE^Quit Menu"
-    " ^INFO^E. ^WHITE^Exit Channel Editor"
+    " ^INFO^E. ^WHITE^Exit Menu System"
     11 EDIT-ansi_display
     read tolower
     case
@@ -598,6 +701,7 @@ $def ALIASDIR   "/Aliases/"
         "5" strcmp not when dup id-color-query 0 end
         "6" strcmp not when dup msg-color-query 0 end
         "7" strcmp not when dup status-toggle 0 end
+        "8" strcmp not when dup menu-channel-permissions end
       then
       default pop me @ "^FAIL^Invalid Option!" ansi_notify 0 end
     endcase
