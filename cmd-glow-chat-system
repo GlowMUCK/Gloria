@@ -2,7 +2,7 @@ wh me=Beginning installation of cmd-glow-chat-system
 @prog cmd-glow-chat-system
 1 99999 d
 1 i
-( cmd-chat-system: $Date: 2009/04/26 14:29:53 $ $Revision: 1.2 $             )
+( cmd-chat-system: $Date: 2009/04/28 16:55:54 $ $Revision: 1.3 $             )
 ( Purpose: Provides a muckwide chat network                                   )
 ( Author: Feaelin Moilar                                                      )
 ( Contributors:                                                               )
@@ -10,6 +10,9 @@ wh me=Beginning installation of cmd-glow-chat-system
 ( --------------------------------------------------------------------------- )
 (
   $Log: cmd-glow-chat-system,v $
+  Revision 1.3  2009/04/28 16:55:54  feaelin
+  Completed add menu.
+
   Revision 1.2  2009/04/26 14:29:53  feaelin
   Fixed various installer script issues caused by the rename.
 
@@ -150,7 +153,7 @@ $def ALIASDIR   "/Aliases/"
 : menu-header ( S-MenuName -- )
   "^WHITE^------------------------------------------------------------------------^RESET^"
   "^GREEN^  Glow Chat System                                        ^FOREST^" 
-  "$Revision: 1.2 $" 1 strcut swap pop dup strlen 1 - strcut pop strcat
+  "$Revision: 1.3 $" 1 strcut swap pop dup strlen 1 - strcut pop strcat
   ": ^YELLOW^" ": " subst
   "^FOREST^  By Feaelin Moilar (Iain E. Davis)                  ^YELLOW^"
   4 rotate dup strlen 19 swap - "                   " 
@@ -302,187 +305,6 @@ $def ALIASDIR   "/Aliases/"
   1
 ;
  
-( NOTE: I need this word, and I need /add to query for zombietalk, guesttalk, levellisten, zombielisten, guestlisten )
-(       also, we need a query for the chat prefix and a way to set the >>> type symbol. )
-( we need a name, a command, a mlevel and optionally group )
-: add-channel-query ( -- )
-  menu-header
-  me @ "^SUCC^MCN Channel Add" ansi_notify
-  me @ " " ansi_notify
-  ( Loop until we get a valid response )
-  ""
-  BEGIN
-    pop
-    me @
-    "^INFO^Enter a name for this channel (e.g. Public Chat Network) or enter ^MOVE^C^INFO^ to cancel:"
-    ansi_notify
-    read
-    dup STR-blank? not
-  UNTIL
-  dup "C" strcmp not if
-    pop
-    me @ "^FAIL^Canceled." ansi_notify 
-    exit
-  then
-  me @ " " ansi_notify
-  ""
-  BEGIN
-    pop
-    me @
-    "^INFO^Enter a SHORT name for this channel (e.g. Public) or enter ^MOVE^C^INFO^ to cancel:"
-    ansi_notify
-    read
-    dup STR-blank? not
-  UNTIL
-  dup "C" strcmp not if
-    2 popn
-    me @ "^FAIL^Canceled." ansi_notify 
-    exit
-  then
-  me @ " " ansi_notify
-  ""
-  BEGIN
-    pop
-    me @
-    "^INFO^Enter the color for the network name (e.g. GREEN) or enter ^MOVE^C^INFO^ to cancel:"
-    ansi_notify
-    read
-    dup STR-blank? not
-  UNTIL
-  dup "C" strcmp not if
-    2 popn
-    me @ "^FAIL^Canceled." ansi_notify 
-    exit
-  then
-  "" "^" subst toupper "^" swap strcat "^" strcat
-  me @ " " ansi_notify
-  ""
-  BEGIN
-    pop
-    me @
-    "^INFO^Enter the color for the network messages (e.g. WHITE) or enter ^MOVE^C^INFO^ to cancel:"
-    ansi_notify
-    read
-    dup STR-blank? not
-  UNTIL
-  dup "C" strcmp not if
-    2 popn
-    me @ "^FAIL^Canceled." ansi_notify 
-    exit
-  then
-  "" "^" subst toupper "^" swap strcat "^" strcat
-  me @ " " ansi_notify
-  me @
-  "^NOTE^NOTE: Any command longer than three characters will have the short versions of"
-  ansi_notify
-  me @
-  "^NOTE^the name added (e.g. public becomes public;publi;publ;pub)."
-  ansi_notify
-  me @ " " ansi_notify
-  ""
-  BEGIN
-    pop
-    me @
-    "^INFO^Enter an command alias list for this channel, each command alias separated by"
-    ansi_notify
-    me @
-    "^INFO^a semi-colon with no spaces (e.g. public;publicchat;...), or enter ^MOVE^C^INFO^ to cancel:"
-    ansi_notify
-    read
-    dup STR-blank? not
-  UNTIL
-  dup "C" strcmp not if
-    3 popn
-    me @ "^FAIL^Canceled." ansi_notify
-    exit
-  then
-  ";" explode
-  "`@`" swap 1 + -1 * rotate
-  ""
-  BEGIN
-    swap
-    BEGIN dup strlen 2 > WHILE
-      trig name over instr if
-        me @ "^FAIL^Sorry, '" rot strcat "' already exists, canceled."
-        strcat ansi_notify
-        4 popn
-        exit
-      then
-      swap over strcat ";" strcat swap
-      dup strlen 1 - strcut pop
-    REPEAT
-    pop
-    over "`@`" strcmp not
-  UNTIL
-  swap pop dup strlen 1 - strcut pop
-  me @ "^SUCC^The complete alias list will be: " 3 pick strcat "." strcat
-  ansi_notify
-  me @ " " ansi_notify
-  ""
-  BEGIN
-    pop
-    me @
-    "^INFO^Enter the required m-level to talk on this channel (^MOVE^0^INFO^ for everyone, ^MOVE^C^INFO^ to cancel): "
-    ansi_notify
-    read
-    dup STR-blank? not
-  UNTIL
-  dup "C" strcmp not if
-    4 popn
-    me @ "^FAIL^Canceled." ansi_notify 
-    exit
-  then
-  me @ " " ansi_notify
-  me @
-  "^NOTE^NOTE: Opt-out means that all players are listening to the channel by default,"
-  ansi_notify
-  me @
-  "^NOTE^and opt-in means that the the players must join before they can hear the channel."
-  ansi_notify
-  ""
-  BEGIN
-    pop
-    me @
-    "^INFO^Enter I for Opt-In, O for Opt-Out, or C for cancel:"
-    ansi_notify
-    read
-    dup "I" strcmp over "O" strcmp and not
-  UNTIL
-  dup "C" strcmp not if
-    4 popn
-    me @ "^FAIL^Canceled." ansi_notify 
-    exit
-  then
-  prog CHANNELDIR 8 pick strcat "Active" setprop
-  prog CHANNELDIR 8 pick strcat "/OptInOut" strcat rot setprop
-  prog CHANNELDIR 7 pick strcat "/LevelTalk" strcat rot atoi setprop
-  prog CHANNELDIR 6 pick strcat "/MessageColor" strcat 4 rotate setprop
-  prog CHANNELDIR 5 pick strcat "/NetColor" strcat 4 rotate setprop
-  prog CHANNELDIR 4 pick strcat "/Name" strcat 5 rotate setprop
-  prog CHANNELDIR 4 pick strcat "/Aliases" strcat 3 pick setprop
-  swap over ";" explode ( S-aliases S-shortname RNG-aliases )
-  BEGIN
-    swap ( S-aliases S-shortname RNG-aliases topalias )
-    prog ALIASDIR rot strcat ( S-aliases S-shortname RNG-aliases D-prog S-prop )
-    3 pick 3 + pick ( S-aliases S-shortname RNG-aliases D-prog S-prop S-shortname )
-    setprop
-    1 - dup not ( S-aliases S-shortname RNG-aliases bool )
-  UNTIL
-  pop
-  prog CHANNELDIR 3 pick strcat "/ShortName" strcat rot setprop
-  trig name ";" strcat swap strcat trig swap setname
-  me @ "^SUCC^Channel Added." ansi_notify
-;
- 
-: set-default ( s -- )
-  prog CHANNELDIR 3 pick strcat getpropstr STR-blank? if
-    pop
-    me @ "^FAIL^Channel not found." ansi_notify
-    exit
-  then
-  prog "Default" rot setprop
-;
- 
 : isExpert? ( D-player -- boolean )
   "_prefs/GlowChatSystem/Expert" getpropval
 ;
@@ -630,6 +452,16 @@ $def ALIASDIR   "/Aliases/"
   swap pop
   dup strlen 1 - strcut pop
   setAliases
+  ( To clean up any remove aliases, we need to rebuild the exit name )
+  "gcs" DBITEM ALIASDIR nextprop ( S-aliases S-AliasProp )
+  BEGIN
+    dup STR-blank? not WHILE  ( S-aliases S-AliasProp )
+    dup dup "/" rinstr strcut swap pop  ( S-aliases S-AliasProp S-Alias )
+    rot ";" strcat swap strcat swap
+    DBITEM swap nextprop
+  REPEAT
+  pop
+  trig swap setname
 ;
  
 : opt-query ( S-ShortName -- )
@@ -770,6 +602,7 @@ $def ALIASDIR   "/Aliases/"
       default pop me @ "^FAIL^Invalid Option!" ansi_notify 0 end
     endcase
   UNTIL
+  pop
   me @ "^SUCC^Channel Editor Exited." ansi_notify
 ; 
   
@@ -794,17 +627,20 @@ $def ALIASDIR   "/Aliases/"
   dup "add" strcmp not if
     pop pop
     me @ "MAGE" flag? if
-      getShortName
+      ""
       channel-editor
     else
       print-help
     then
     exit
   then
-  dup "default" strcmp not if
+  dup "edit" strcmp not if
     pop
     me @ "MAGE" flag? if
-      set-default
+      dup STR-blank? if
+        pop getShortName
+      then
+      channel-editor
     else
       pop print-help
     then
