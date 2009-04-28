@@ -2,7 +2,7 @@ wh me=Beginning installation of cmd-glow-chat-system
 @prog cmd-glow-chat-system
 1 99999 d
 1 i
-( cmd-chat-system: $Date: 2009/04/26 14:25:08 $ $Revision: 1.1 $             )
+( cmd-chat-system: $Date: 2009/04/26 14:29:53 $ $Revision: 1.2 $             )
 ( Purpose: Provides a muckwide chat network                                   )
 ( Author: Feaelin Moilar                                                      )
 ( Contributors:                                                               )
@@ -10,6 +10,9 @@ wh me=Beginning installation of cmd-glow-chat-system
 ( --------------------------------------------------------------------------- )
 (
   $Log: cmd-glow-chat-system,v $
+  Revision 1.2  2009/04/26 14:29:53  feaelin
+  Fixed various installer script issues caused by the rename.
+
   Revision 1.1  2009/04/26 14:25:08  feaelin
   Initial revision
 
@@ -19,6 +22,7 @@ wh me=Beginning installation of cmd-glow-chat-system
 $include $lib/strings
 $include $lib/edit
 $include $lib/case
+$include $lib/mv-cp
  
 ( While I have this set to 'prog' so that the channels are stored on the      )
 ( program and thereby the same muckwide, it could be set to 'trigger @' which )
@@ -27,17 +31,6 @@ $include $lib/case
 $def DBITEM     prog
 $def CHANNELDIR "/Channels/"
 $def ALIASDIR   "/Aliases/" 
-
-$def SPACES "                                                                                "
- 
-: print-header ( -- )
-  "Muckwide Chat Network" 80 over strlen -
-  "$Revision: 1.1 $" 11 strcut swap pop dup strlen 2 - strcut pop
-  "Release: " swap strcat
-  swap over strlen - SPACES swap strcut pop swap strcat strcat
-  "--------------------------------------------------------------------------------"
-  2 EDIT-ansi_display
-;
  
 : getNetSeparator ( -- S-Separator )
   DBITEM "/NetSeparator" getpropstr
@@ -47,24 +40,83 @@ $def SPACES "                                                                   
   DBITEM ALIASDIR command @ strcat getpropstr
 ;
  
+: moveChannel ( S-ShortName S-NewShortName -- bool )
+  "/Channels/" swap strcat
+  swap
+  "/Channels/" swap strcat swap
+  DBITEM -3 rotate DBITEM swap MVCP-move-prop
+;
+ 
+: bindAlias ( S-ShortName S-Alias )
+  DBITEM ALIASDIR rot strcat rot setprop
+;
+ 
 : getActive ( S-ShortName -- S-Active )
+  dup STR-blank? if
+    pop "" exit
+  then
   DBITEM CHANNELDIR rot strcat getpropstr
 ;
  
-: getNetColor ( S-ShortName -- S-NetColor )
-  DBITEM CHANNELDIR rot strcat "/NetColor" strcat getpropstr
+: setChannelActive ( S-ShortName -- )
+  DBITEM CHANNELDIR rot strcat "Active" setprop
+;
+ 
+: setChannelInActive ( S-ShortName -- )
+  DBITEM CHANNELDIR rot strcat "Inactive" setprop
+;
+ 
+: getFullName ( S-ShortName -- S-FullName )
+  DBITEM CHANNELDIR rot strcat "/Name" strcat getpropstr
+;
+ 
+: setFullName ( S-ShortName S-FullName -- )
+  swap CHANNELDIR swap strcat "/Name" strcat
+  DBITEM swap rot setprop
 ;
  
 : getAliases ( S-ShortName -- S-AliasList )
   DBITEM CHANNELDIR rot strcat "/Aliases" strcat getpropstr
 ;
  
+: setAliases ( S-ShortName S-Aliases -- )
+  swap CHANNELDIR swap strcat "/Aliases" strcat
+  DBITEM swap rot setprop
+;
+ 
+: setAlias ( S-Alias S-ShortName -- )
+  DBITEM ALIASDIR 4 rotate strcat rot setprop
+;
+ 
+: removeAlias ( S-Alias -- )
+  DBITEM swap ALIASDIR swap strcat remove_prop
+;
+ 
+: getOptStatus ( S-ShortName -- S-OptStatus )
+  DBITEM CHANNELDIR rot strcat "/OptInOut" strcat getpropstr
+;
+ 
+: setOptStatus ( S-ShortName S-OptStatus -- )
+  swap CHANNELDIR swap strcat "/OptInOut" strcat
+  DBITEM swap rot setprop
+;
+ 
+: getNetColor ( S-ShortName -- S-NetColor )
+  DBITEM CHANNELDIR rot strcat "/NetColor" strcat getpropstr
+;
+ 
+: setNetColor ( S-ShortName S-NetColor -- )
+  swap CHANNELDIR swap strcat "/NetColor" strcat
+  DBITEM swap rot setprop
+;
+ 
 : getMessageColor ( S-ShortName -- S-MessageColor )
   DBITEM CHANNELDIR rot strcat "/MessageColor" strcat getpropstr
 ;
  
-: getFullName ( S-ShortName -- S-FullName )
-  DBITEM CHANNELDIR rot strcat "/Name" strcat getpropstr
+: setMessageColor ( S-ShortName S-MessageColor -- )
+  swap CHANNELDIR swap strcat "/MessageColor" strcat
+  DBITEM swap rot setprop
 ;
  
 : getGuestTalk ( S-ShortName -- B-GuestTalk )
@@ -74,7 +126,7 @@ $def SPACES "                                                                   
 : getZombieTalk ( S-ShortName -- B-ZombieTalk )
   DBITEM CHANNELDIR rot strcat "/ZombieTalk" strcat getpropval
 ;
-
+ 
 : getLevelTalk ( S-ShortName -- I-LevelListen )
   DBITEM CHANNELDIR rot strcat "/LevelListen" strcat getpropval
 ;
@@ -86,21 +138,29 @@ $def SPACES "                                                                   
 : getZombieListen ( S-ShortName -- B-ZombieListen )
   DBITEM CHANNELDIR rot strcat "/ZombieListen" strcat getpropval
 ;
-
+ 
 : getLevelListen ( S-ShortName -- I-LevelListen )
   DBITEM CHANNELDIR rot strcat "/LevelListen" strcat getpropval
-;
- 
-: getOptStatus ( S-ShortName -- S-OptStatus )
-  DBITEM CHANNELDIR rot strcat "/OptInOut" strcat getpropstr
 ;
  
 : getOptList ( S-ShortName -- S-OptList )
   DBITEM CHANNELDIR rot strcat "/OptList" strcat getpropstr
 ;
  
+: menu-header ( S-MenuName -- )
+  "^WHITE^------------------------------------------------------------------------^RESET^"
+  "^GREEN^  Glow Chat System                                        ^FOREST^" 
+  "$Revision: 1.2 $" 1 strcut swap pop dup strlen 1 - strcut pop strcat
+  ": ^YELLOW^" ": " subst
+  "^FOREST^  By Feaelin Moilar (Iain E. Davis)                  ^YELLOW^"
+  4 rotate dup strlen 19 swap - "                   " 
+  swap strcut pop swap strcat strcat "^RESET^" strcat
+  "^WHITE^------------------------------------------------------------------------^RESET^"
+  4 EDIT-ansi_display
+;
+ 
 : print-help ( -- )
-  print-header
+  "HELP" menu-header
 ;
 
 : NotifyPlayer ( D-player S-message -- )
@@ -246,7 +306,7 @@ $def SPACES "                                                                   
 (       also, we need a query for the chat prefix and a way to set the >>> type symbol. )
 ( we need a name, a command, a mlevel and optionally group )
 : add-channel-query ( -- )
-  print-header
+  menu-header
   me @ "^SUCC^MCN Channel Add" ansi_notify
   me @ " " ansi_notify
   ( Loop until we get a valid response )
@@ -423,39 +483,274 @@ $def SPACES "                                                                   
   prog "Default" rot setprop
 ;
  
-: menu-header ( S-MenuName -- )
-  "^WHITE^------------------------------------------------------------------------^RESET^"
-  "^GREEN^  Glow Chat System                                        ^FOREST^" 
-  "$Revision: 1.1 $" 1 strcut swap pop dup strlen 1 - strcut pop strcat
-  ": ^YELLOW^" ": " subst
-  "^FOREST^  By Feaelin Moilar (Iain E. Davis)                  ^YELLOW^"
-  4 rotate dup strlen 19 swap - "                   " 
-  swap strcut pop swap strcat strcat "^RESET^" strcat
-  "^WHITE^------------------------------------------------------------------------^RESET^"
-  4 EDIT-ansi_display
+: isExpert? ( D-player -- boolean )
+  "_prefs/GlowChatSystem/Expert" getpropval
 ;
  
+: short-name-query ( S-CurrentShortName -- S-NewShortName )
+  "SHORT-NAME" menu-header
+  me @ isExpert? not if
+    me @
+    "^INFO^The short name is a unique identifier for each channel which is"
+    ansi_notify
+    me @
+    "^INFO^displayed with each message sent by the channel and is used to identify"
+    ansi_notify
+    me @
+    "^INFO^the channel when setting channel specific settings."
+    ansi_notify
+    me @ " " ansi_notify
+  then
+  dup STR-blank? not if
+    me @
+    "^INFO^The current short name is: ^MOVE^" 3 pick strcat "." strcat
+    ansi_notify
+  then
+  me @
+  "^INFO^Enter a new short name or enter a period (^MOVE^.^INFO^) by itself to"
+  ansi_notify
+  me @ "^INFO^keep the current one:" ansi_notify
+  read
+  me @ "^SUCC^" 3 pick strcat ansi_notify
+  dup "." strcmp not if ( . means no change, just clean up and exit )
+    pop exit
+  then
+  dup STR-blank? if ( "" means no change, just clean up and exit )
+    pop exit
+  then
+  over over strcmp not if ( if they're the same, no change, just clean up and exit )
+    pop exit
+  then
+  over STR-blank? if ( Empty string indicates this is a new channel )
+    swap pop dup setChannelInactive exit
+  then
+  ( Check to make sure the new name doesn't exist )
+  dup getActive STR-blank? not if
+    me @ "^FAIL^Shortname already exists. Use remove channel first." ansi_notify
+    pop
+    exit
+  then
+  ( Channel Rename )
+  ( First, update entries in the aliasdir )
+  over getAliases
+  dup STR-blank? not if ( Hm. Only do this if there ARE aliases )
+    ";" explode ( S-OldShortName S-NewShortName Alias-RNG )
+    BEGIN dup 0 = not WHILE
+      dup 2 + pick 3 pick  ( S-OldShortName S-NewShortName Alias-RNG S-NewShortName S-Alias )
+      bindAlias ( binds alias to the new channel name )
+      swap pop 1 -
+    REPEAT
+    pop ( Pop the index off )
+  then
+  dup -3 rotate
+  moveChannel not if
+    me @
+    "^FAIL^Move failed for a mysterious reason. Call for help. Press PANIC!"
+    ansi_notify
+  then
+;
+ 
+: full-name-query ( S-ShortName -- )
+  "FULL-NAME" menu-header
+  me @ " " ansi_notify
+  dup getFullName dup STR-blank? not if
+    me @ "^INFO^Current full name: ^MOVE^" rot strcat ansi_notify
+  then
+  me @
+  "^INFO^Enter new full name for the channel or enter a period by itself to keep"
+  ansi_notify
+  me @
+  "^INFO^the current one:"
+  ansi_notify
+  read
+  me @ "^SUCC^" 3 pick strcat ansi_notify
+  dup "." strcmp not if
+    pop pop exit
+  then
+  dup STR-blank? if
+    pop pop exit
+  then
+  setFullName
+;
+ 
+: alias-list-query ( S-ShortName -- )
+  "ALIAS-LIST" menu-header
+  me @ isExpert? not if
+    me @
+    "^NOTE^NOTE: When you enter an alias (or aliases) that is longer than three"
+    ansi_notify
+    me @
+    "^NOTE^characters, shorter versions of the same alias will automatically be"
+    ansi_notify
+    me @
+    "^NOTE^added. For example, 'public;social' will automatically become:"
+    ansi_notify
+    me @
+    "^NOTE^public;publi;publ;pub;social;socia;soci;soc"
+    ansi_notify
+  then
+  me @ " " ansi_notify
+  dup getAliases dup STR-blank? not if
+    me @ "^INFO^Current alias list: ^MOVE^" rot strcat ansi_notify
+  then
+  me @
+  "^INFO^Enter new alias list for the channel or enter a period by itself to keep"
+  ansi_notify
+  me @
+  "^INFO^the current one:"
+  ansi_notify
+  read
+  me @ "^SUCC^" 3 pick strcat ansi_notify
+  dup "." strcmp not if
+    pop pop exit
+  then
+  dup STR-blank? if
+    pop pop exit
+  then
+  ( Blow away all the old alias entries )
+  over getAliases ";" explode
+  BEGIN
+    swap removeAlias
+    1 - dup 0 =
+  UNTIL
+  pop
+  ( Generate short versions of the alias list, setting up their entry in the )
+  ( alias dir as we go )
+  ";" explode ""
+  BEGIN
+    rot
+    BEGIN
+      dup -3 rotate dup 5 pick 5 + pick setAlias
+      strcat ";" strcat
+      swap dup strlen 1 - strcut pop
+      dup strlen 3 <
+    UNTIL
+    pop swap 1 - swap over 0 =
+  UNTIL
+  swap pop
+  dup strlen 1 - strcut pop
+  setAliases
+;
+ 
+: opt-query ( S-ShortName -- )
+  "OPT-STATUS" menu-header
+  me @ " " ansi_notify
+  me @ isExpert? not if
+    me @
+    "^NOTE^NOTE: Opt-out means that all players are listening to the channel by"
+    ansi_notify
+    me @
+    "^NOTE^default, and opt-in means that the the players must join before they can"
+    ansi_notify
+    me @
+    "^NOTE^hear the channel."
+    ansi_notify
+  then
+  me @
+  "^INFO^Enter I for Opt-In, O for Opt-Out:"
+  ansi_notify
+  read toupper
+  me @ "^SUCC^" 3 pick strcat ansi_notify
+  dup "I" strcmp over "O" strcmp
+  and if
+    pop pop
+    me @
+    "^FAIL^Invalid Input. Change ignored."
+    ansi_notify
+    exit
+  then
+  setOptStatus
+;
+ 
+: id-color-query ( S-ShortName -- )
+  "NID-COLOR" menu-header
+  me @ " " ansi_notify
+  dup getNetColor dup "" strcmp if
+    "^^" "^" subst
+    me @ "^INFO^Current network identifier color: ^MOVE^" rot strcat ansi_notify
+  else
+    pop
+  then
+  me @
+  "^INFO^Enter new color for the network identifier or enter a period by itself"
+  ansi_notify
+  me @
+  "^INFO^to keep the current one:"
+  ansi_notify
+  read
+  me @ "^SUCC^" 3 pick strcat ansi_notify
+  dup "." strcmp not if
+    pop pop exit
+  then
+  dup STR-blank? if
+    pop pop exit
+  then
+  ansi_strip "^" swap strcat "^" strcat
+  setNetColor
+;
+ 
+: msg-color-query ( S-ShortName -- )
+  "MSG-COLOR" menu-header
+  me @ " " ansi_notify
+  dup getMessageColor dup "" strcmp if
+    "^^" "^" subst
+    me @ "^INFO^Current message color: ^MOVE^" rot strcat ansi_notify
+  else
+    pop
+  then
+  me @
+  "^INFO^Enter new color for messages or enter a period by itself to keep the"
+  ansi_notify
+  me @
+  "^INFO^current one:"
+  ansi_notify
+  read
+  me @ "^SUCC^" 3 pick strcat ansi_notify
+  dup "." strcmp not if
+    pop pop exit
+  then
+  dup STR-blank? if
+    pop pop exit
+  then
+  ansi_strip "^" swap strcat "^" strcat
+  setMessageColor
+;
+ 
+: status-toggle ( S-ShortName -- )
+  dup getActive "Active" strcmp not if
+    me @ "^SUCC^Status toggled to Inactive." ansi_notify
+    setChannelInactive
+  else
+    me @ "^SUCC^Status toggled to Active." ansi_notify
+    setChannelActive
+  then
+;
+ 
+( channel-editor: menu for editing general channel settings )
 : channel-editor ( S-ShortName -- )
   BEGIN
     "CHANNEL-EDIT" menu-header
-    " ^YELLOW^1. ^WHITE^Channel Short Name: ^YELLOW^"
-    2 pick strcat "^RESET^" strcat
-    " ^YELLOW^2. ^WHITE^Channel Full Name: ^YELLOW^"
-    3 pick getFullName strcat "^RESET^" strcat
-    " ^YELLOW^3. ^WHITE^Channel Aliases: ^YELLOW^"
-    4 pick getAliases strcat "^RESET^" strcat
-    " ^YELLOW^4. ^WHITE^Opt-In/Opt-Out: ^YELLOW^"
-    5 pick getOptStatus strcat "^RESET^" strcat
-    " ^YELLOW^5. ^WHITE^Network Identifier Color: ^YELLOW^"
+    " ^INFO^1. ^WHITE^Channel Short Name: ^MOVE^"
+    2 pick strcat
+    " ^INFO^2. ^WHITE^Channel Full Name: ^MOVE^"
+    3 pick getFullName strcat
+    " ^INFO^3. ^WHITE^Channel Aliases: ^MOVE^"
+    4 pick getAliases strcat
+    " ^INFO^4. ^WHITE^Opt-In/Opt-Out: ^MOVE^"
+    5 pick getOptStatus strcat
+    " ^INFO^5. ^WHITE^Network Identifier Color: ^MOVE^"
     6 pick getNetColor "^^" "^" subst
-    strcat "^RESET^" strcat
-    " ^YELLOW^6. ^WHITE^Network Message Color: ^YELLOW^"
+    strcat
+    " ^INFO^6. ^WHITE^Network Message Color: ^MOVE^"
     7 pick getMessageColor "^^" "^" subst
-    strcat "^RESET^" strcat
-    " ^YELLOW^7. ^WHITE^Edit Permissions^RESET^"
-    " ^YELLOW^Q. ^WHITE^Quit Menu^RESET^"
-    " ^YELLOW^E. ^WHITE^Exit Channel Editor^RESET^"
-    9 EDIT-ansi_display
+    strcat
+    " ^INFO^7. ^WHITE^Channel Status: ^MOVE^"
+    8 pick getActive strcat
+    " ^INFO^8. ^WHITE^Edit Permissions"
+    " ^INFO^9. ^WHITE^Edit Optee List"
+    " ^INFO^Q. ^WHITE^Quit Menu"
+    " ^INFO^E. ^WHITE^Exit Channel Editor"
+    11 EDIT-ansi_display
     read tolower
     case
       "q" strcmp not when exit end
@@ -463,9 +758,16 @@ $def SPACES "                                                                   
         me @ "^SUCC^Channel Editor Exited." ansi_notify
         exit
       end
-(      "1" strcmp not when sys-config-menu end
-      "2" strcmp not when View-Log 0 end )
-      default me @ "^FAIL^Invalid Option!" ansi_notify 0 end
+      "1" strcmp not when short-name-query 0 end
+      3 pick STR-blank? not if
+        "2" strcmp not when dup full-name-query 0 end
+        "3" strcmp not when dup alias-list-query 0 end
+        "4" strcmp not when dup opt-query 0 end
+        "5" strcmp not when dup id-color-query 0 end
+        "6" strcmp not when dup msg-color-query 0 end
+        "7" strcmp not when dup status-toggle 0 end
+      then
+      default pop me @ "^FAIL^Invalid Option!" ansi_notify 0 end
     endcase
   UNTIL
   me @ "^SUCC^Channel Editor Exited." ansi_notify
@@ -492,7 +794,8 @@ $def SPACES "                                                                   
   dup "add" strcmp not if
     pop pop
     me @ "MAGE" flag? if
-      add-channel-query
+      getShortName
+      channel-editor
     else
       print-help
     then
@@ -509,10 +812,6 @@ $def SPACES "                                                                   
   then
   pop
   print-help
-;
-
-: m2
-  channel-editor
 ;
 .
 c
