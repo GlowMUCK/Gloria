@@ -2,7 +2,7 @@ wh me=Beginning installation of cmd-glow-chat-system
 @prog cmd-glow-chat-system
 1 99999 d
 1 i
-( cmd-chat-system: $Date: 2009/04/28 17:15:13 $ $Revision: 1.4 $             )
+( cmd-chat-system: $Date: 2009/04/28 18:21:27 $ $Revision: 1.5 $             )
 ( Purpose: Provides a muckwide chat network                                   )
 ( Author: Feaelin Moilar                                                      )
 ( Contributors:                                                               )
@@ -10,6 +10,9 @@ wh me=Beginning installation of cmd-glow-chat-system
 ( --------------------------------------------------------------------------- )
 (
   $Log: cmd-glow-chat-system,v $
+  Revision 1.5  2009/04/28 18:21:27  feaelin
+  Added permissions editor; support for yes/no permissions done.
+
   Revision 1.4  2009/04/28 17:15:13  feaelin
   Removed vestigial prompted channel edit
   Added code to channel editor so that the exit name/alias list is updated.
@@ -179,21 +182,36 @@ $def ALIASDIR   "/Aliases/"
 ;
  
 : getLevelTalk ( S-ShortName -- I-LevelListen )
-  DBITEM CHANNELDIR rot strcat "/LevelListen" strcat getpropval
+  DBITEM CHANNELDIR rot strcat "/LevelTalk" strcat getpropval
+;
+ 
+: setLevelTalk ( S-ShortName I-LevelTalk -- )
+  swap CHANNELDIR swap strcat "/LevelTalk" strcat
+  DBITEM swap rot setprop
 ;
  
 : getLevelListen ( S-ShortName -- I-LevelListen )
   DBITEM CHANNELDIR rot strcat "/LevelListen" strcat getpropval
 ;
  
+: setLevelListen ( S-ShortName I-LevelListen -- )
+  swap CHANNELDIR swap strcat "/LevelListen" strcat
+  DBITEM swap rot setprop
+;
+ 
 : getOptList ( S-ShortName -- S-OptList )
   DBITEM CHANNELDIR rot strcat "/OptList" strcat getpropstr
+;
+ 
+: setOptList ( S-ShortName S-OptList -- )
+  swap CHANNELDIR swap strcat "/OptList" strcat
+  DBITEM swap rot setprop
 ;
  
 : menu-header ( S-MenuName -- )
   "^WHITE^------------------------------------------------------------------------^RESET^"
   "^GREEN^  Glow Chat System                                        ^FOREST^" 
-  "$Revision: 1.4 $" 1 strcut swap pop dup strlen 1 - strcut pop strcat
+  "$Revision: 1.5 $" 1 strcut swap pop dup strlen 1 - strcut pop strcat
   ": ^YELLOW^" ": " subst
   "^FOREST^  By Feaelin Moilar (Iain E. Davis)                  ^YELLOW^"
   4 rotate dup strlen 19 swap - "                   " 
@@ -598,6 +616,64 @@ $def ALIASDIR   "/Aliases/"
   then
 ;
  
+: talk-level-query ( S-ShortName -- )
+  "TALK-LEVEL" menu-header
+  me @ isExpert? not if
+    me @ 
+    "^NOTE^An m-level is the mucker or wizard level of the character. Levels 1,2,3"
+    ansi_notify
+    me @
+    "^NOTE^correspond to M1,M2,M3 bits; Levels 4,5,6,7 correspond to the W1,W2,W3,W4 bits,"
+    ansi_notify
+    me @
+    "^NOTE^0 is none, and 8 is #1 (the Man). 9+ would block all wizards and mortals."
+    ansi_notify
+  then
+  dup getLevelTalk intostr
+  me @ "^NOTE^Current Talk Level: ^MOVE^" rot strcat ansi_notify
+  me @ "^INFO^Enter the new Talk Level:" ansi_notify
+  read
+  dup me @ swap "^SUCC^" swap strcat ansi_notify
+  atoi
+  dup 0 < if
+    pop 0
+  else
+    dup 8 > if
+      pop 8
+    then
+  then
+  setLevelTalk
+;
+ 
+: listen-level-query ( S-ShortName -- )
+  "LISTEN-LEVEL" menu-header
+  me @ isExpert? not if
+    me @ 
+    "^NOTE^An m-level is the mucker or wizard level of the character. Levels 1,2,3"
+    ansi_notify
+    me @
+    "^NOTE^correspond to M1,M2,M3 bits; Levels 4,5,6,7 correspond to the W1,W2,W3,W4 bits,"
+    ansi_notify
+    me @
+    "^NOTE^0 is none, and 8 is #1 (the Man). 9+ would block all wizards and mortals."
+    ansi_notify
+  then
+  dup getLevelListen intostr
+  me @ "^NOTE^Current Listen Level: ^MOVE^" rot strcat ansi_notify
+  me @ "^INFO^Enter the new Listen Level:" ansi_notify
+  read
+  dup me @ swap "^SUCC^" swap strcat ansi_notify
+  atoi
+  dup 0 < if
+    pop 0
+  else
+    dup 8 > if
+      pop 8
+    then
+  then
+  setLevelListen
+;
+ 
 ( channel-editor: menu for editing general channel settings )
 : menu-channel-permissions ( S-ShortName -- )
   BEGIN
@@ -651,9 +727,8 @@ $def ALIASDIR   "/Aliases/"
       "2" strcmp not when dup toggleGuestListen 0 end
       "3" strcmp not when dup toggleZombieTalk 0 end
       "4" strcmp not when dup toggleZombieListen 0 end
-      ("5" strcmp not when dup id-color-query 0 end
-      "6" strcmp not when dup msg-color-query 0 end
-      "7" strcmp not when dup status-toggle 0 end)
+      "5" strcmp not when dup talk-level-query 0 end
+      "6" strcmp not when dup listen-level-query 0 end
       default pop me @ "^FAIL^Invalid Option!" ansi_notify 0 end
     endcase
   UNTIL
@@ -710,6 +785,35 @@ $def ALIASDIR   "/Aliases/"
   me @ "^SUCC^Channel Editor Exited." ansi_notify
 ; 
   
+: joinChannel ( -- )
+  getShortName dup getOptStatus
+  "I" strcmp not if
+    dup getOptList me @ intostr "#" swap strcat "#" strcat
+    over over instr if
+      pop pop pop
+    	me @ "^FAIL^You have already joined that channel." ansi_notify
+   	else
+   	  strcat setOptList
+      me @
+      "^SUCC^You join the ^MOVE^" getShortName getFullName strcat
+      "^SUCC^." strcat
+      ansi_notify
+    then
+  else
+    dup getOptList me @ intostr "#" swap strcat "#" strcat
+    over over instr if
+      "" swap subst setOptList
+      me @
+      "^SUCC^You join the ^MOVE^" getShortName getFullName strcat
+      "^SUCC^." strcat
+      ansi_notify
+    else
+      pop pop pop
+      me @ "^FAIL^You have already joined that channel." ansi_notify
+    then  
+  then
+;
+
 : main
   dup STR-blank? if
     pop print-help exit
@@ -745,9 +849,15 @@ $def ALIASDIR   "/Aliases/"
         pop getShortName
       then
       channel-editor
+      pop
     else
       pop print-help
     then
+    exit
+  then
+  dup "join" strcmp not if
+    pop pop
+    joinChannel
     exit
   then
   pop
