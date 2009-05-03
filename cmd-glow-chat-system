@@ -2,7 +2,7 @@ wh me=Beginning installation of cmd-glow-chat-system
 @prog cmd-glow-chat-system
 1 99999 d
 1 i
-( cmd-chat-system: $Date: 2009/04/30 01:26:37 $ $Revision: 1.6 $             )
+( cmd-chat-system: $Date: 2009/05/01 23:09:24 $ $Revision: 1.7 $             )
 ( Purpose: Provides a muckwide chat network                                   )
 ( Author: Feaelin Moilar                                                      )
 ( Contributors:                                                               )
@@ -10,6 +10,9 @@ wh me=Beginning installation of cmd-glow-chat-system
 ( --------------------------------------------------------------------------- )
 (
   $Log: cmd-glow-chat-system,v $
+  Revision 1.7  2009/05/01 23:09:24  feaelin
+  Updated help.
+
   Revision 1.6  2009/04/30 01:26:37  feaelin
   Added /join to channel.
 
@@ -37,11 +40,7 @@ $include $lib/edit
 $include $lib/case
 $include $lib/mv-cp
  
-( While I have this set to 'prog' so that the channels are stored on the      )
-( program and thereby the same muckwide, it could be set to 'trigger @' which )
-( would store them on the triggering action, making it possible to have area  )
-( specific channels.                                                          )
-$def DBITEM     prog
+$def DBITEM     trig
 $def CHANNELDIR "/Channels/"
 $def ALIASDIR   "/Aliases/" 
  
@@ -102,6 +101,9 @@ $def ALIASDIR   "/Aliases/"
 ;
  
 : removeAlias ( S-Alias -- )
+  dup STR-blank? if
+    pop exit
+  then
   DBITEM swap ALIASDIR swap strcat remove_prop
 ;
  
@@ -214,7 +216,7 @@ $def ALIASDIR   "/Aliases/"
 : menu-header ( S-MenuName -- )
   "^WHITE^------------------------------------------------------------------------^RESET^"
   "^GREEN^  Glow Chat System                                        ^FOREST^" 
-  "$Revision: 1.6 $" 1 strcut swap pop dup strlen 1 - strcut pop strcat
+  "$Revision: 1.7 $" 1 strcut swap pop dup strlen 1 - strcut pop strcat
   ": ^YELLOW^" ": " subst
   "^FOREST^  By Feaelin Moilar (Iain E. Davis)                  ^YELLOW^"
   4 rotate dup strlen 19 swap - "                   " 
@@ -292,21 +294,28 @@ $def ALIASDIR   "/Aliases/"
   online dup 2 + rotate ( connected-RNG S-message )
   getShortName "" ( connected-RNG S-message S-Channel S-sent )
   BEGIN
-    dup "#" 7 pick intostr strcat "#" strcat ( connected-RNG S-message S-Channel S-sent S-sent S-current )
-    instr not if ( connected-RNG S-message S-Channel S-sent )
-      "#" strcat 5 pick intostr strcat "#" strcat ( connected-RNG S-message S-Channel S-sent )
+    dup "#" 7 pick intostr strcat "#" strcat
+    ( connected-RNG S-message S-Channel S-sent S-sent S-current )
+    instr not if
+	    ( connected-RNG S-message S-Channel S-sent )
+      "#" strcat 5 pick intostr strcat "#" strcat
+      ( connected-RNG S-message S-Channel S-sent )
       5 pick canListen? if
         ( Is the channel Opt-In, or Opt-Out? )
         getShortName getOptStatus
         "I" strcmp not if
-          getShortName getOptList ( connected-RNG S-message S-Channel S-sent S-OptList )
-          "#" 7 pick intostr strcat "#" strcat ( connected-RNG S-message S-Channel S-sent S-OptList S-current )
+          getShortName getOptList
+          ( connected-RNG S-message S-Channel S-sent S-OptList )
+          "#" 7 pick intostr strcat "#" strcat
+          ( connected-RNG S-message S-Channel S-sent S-OptList S-current )
           instr if ( connected-RNG S-message S-Channel S-sent )
             5 pick 4 pick NotifyPlayer
           then
         else ( optstatus )
-          getShortName getOptList ( connected-RNG S-message S-Channel S-sent S-OptList )
-          "#" 7 pick intostr strcat "#" strcat ( connected-RNG S-message S-Channel S-sent S-OptList S-current )
+          getShortName getOptList
+          ( connected-RNG S-message S-Channel S-sent S-OptList )
+          "#" 7 pick intostr strcat "#" strcat
+          ( connected-RNG S-message S-Channel S-sent S-OptList S-current )
           instr not if ( connected-RNG S-message S-Channel S-sent )
             5 pick 4 pick NotifyPlayer
           then
@@ -415,7 +424,8 @@ $def ALIASDIR   "/Aliases/"
   dup STR-blank? if ( "" means no change, just clean up and exit )
     pop exit
   then
-  over over strcmp not if ( if they're the same, no change, just clean up and exit )
+  ( if they're the same, no change, just clean up and exit )
+  over over strcmp not if
     pop exit
   then
   over STR-blank? if ( Empty string indicates this is a new channel )
@@ -433,7 +443,8 @@ $def ALIASDIR   "/Aliases/"
   dup STR-blank? not if ( Hm. Only do this if there ARE aliases )
     ";" explode ( S-OldShortName S-NewShortName Alias-RNG )
     BEGIN dup 0 = not WHILE
-      dup 2 + pick 3 pick  ( S-OldShortName S-NewShortName Alias-RNG S-NewShortName S-Alias )
+      dup 2 + pick 3 pick
+      ( S-OldShortName S-NewShortName Alias-RNG S-NewShortName S-Alias )
       bindAlias ( binds alias to the new channel name )
       swap pop 1 -
     REPEAT
@@ -452,6 +463,8 @@ $def ALIASDIR   "/Aliases/"
   me @ " " ansi_notify
   dup getFullName dup STR-blank? not if
     me @ "^INFO^Current full name: ^MOVE^" rot strcat ansi_notify
+  else
+    pop
   then
   me @
   "^INFO^Enter new full name for the channel or enter a period by itself to keep"
@@ -489,6 +502,8 @@ $def ALIASDIR   "/Aliases/"
   me @ " " ansi_notify
   dup getAliases dup STR-blank? not if
     me @ "^INFO^Current alias list: ^MOVE^" rot strcat ansi_notify
+  else
+    pop
   then
   me @
   "^INFO^Enter new alias list for the channel or enter a period by itself to keep"
@@ -859,7 +874,70 @@ $def ALIASDIR   "/Aliases/"
     then  
   then
 ;
-
+ 
+: printWhoHeader ( -- )
+  me @ "^SUCC^/-------------------\\" ansi_notify
+  me @ "^SUCC^| ^WHITE^PLAYER^SUCC^            |" ansi_notify
+  me @ "^SUCC^|-------------------|" ansi_notify
+;
+ 
+: printWhoLine ( d -- )
+  "^SUCC^| ^WHITE^" over name dup " " 16 STR-fillfield
+   "  ^SUCC^| " strcat strcat strcat
+  me @ swap ansi_notify
+  pop
+;
+ 
+: printWhoTail ( -- )
+  me @ "^SUCC^\\-------------------/" ansi_notify
+;
+ 
+: whoChannel ( s -- )
+  dup STR-blank? if
+    pop getShortName dup STR-blank? if
+      me @ "^FAIL^Which channel?" ansi_notify
+      exit
+    then
+  else
+  	dup getFullName STR-blank? if
+  	  me @ "^FAIL^Which channel?" ansi_notify
+  	  exit
+  	then
+  then
+  printWhoHeader
+  ( S-ShortName )
+  dup getOptStatus "I" strcmp not if
+  	( The channel is an opt-in channel, so the refs are those listening )
+  	dup getOptList "##" explode
+  	BEGIN
+  		swap dup STR-blank? if
+  			pop
+  		else
+  		  "" "#" subst
+  		  atoi dbref dup awake? if
+  		    printWhoLine
+  		  else
+  		    pop
+  		  then
+  		then
+  		1 - dup 0 =
+  	UNTIL
+  	pop pop
+  else
+  	( The channel is an opt-out channel, so the refs are those not listening )
+  	online
+  	BEGIN
+  	  swap dup intostr "#" swap strcat "#" strcat 3 pick 3 + pick
+  	  swap instr not if
+  	    printWhoLine
+  	  then
+  	  1 - dup 0 =
+  	UNTIL
+  	pop pop
+  then
+  printWhoTail
+;
+ 
 : main
   dup STR-blank? if
     pop print-help exit
@@ -919,6 +997,11 @@ $def ALIASDIR   "/Aliases/"
   dup "leave" strcmp not if
     pop pop
     unJoinChannel
+    exit
+  then
+  dup "who" strcmp not if
+    pop
+    whoChannel
     exit
   then
   pop
