@@ -2,7 +2,7 @@ wh me=Beginning installation of cmd-glow-chat-system
 @prog cmd-glow-chat-system
 1 99999 d
 1 i
-( cmd-chat-system: $Date: 2009/05/01 23:09:24 $ $Revision: 1.7 $             )
+( cmd-chat-system: $Date: 2009/05/03 18:09:06 $ $Revision: 1.8 $             )
 ( Purpose: Provides a muckwide chat network                                   )
 ( Author: Feaelin Moilar                                                      )
 ( Contributors:                                                               )
@@ -10,6 +10,9 @@ wh me=Beginning installation of cmd-glow-chat-system
 ( --------------------------------------------------------------------------- )
 (
   $Log: cmd-glow-chat-system,v $
+  Revision 1.8  2009/05/03 18:09:06  feaelin
+  /who added
+
   Revision 1.7  2009/05/01 23:09:24  feaelin
   Updated help.
 
@@ -216,7 +219,7 @@ $def ALIASDIR   "/Aliases/"
 : menu-header ( S-MenuName -- )
   "^WHITE^------------------------------------------------------------------------^RESET^"
   "^GREEN^  Glow Chat System                                        ^FOREST^" 
-  "$Revision: 1.7 $" 1 strcut swap pop dup strlen 1 - strcut pop strcat
+  "$Revision: 1.8 $" 1 strcut swap pop dup strlen 1 - strcut pop strcat
   ": ^YELLOW^" ": " subst
   "^FOREST^  By Feaelin Moilar (Iain E. Davis)                  ^YELLOW^"
   4 rotate dup strlen 19 swap - "                   " 
@@ -607,6 +610,7 @@ $def ALIASDIR   "/Aliases/"
   dup STR-blank? if
     pop pop exit
   then
+  toupper
   ansi_strip "^" swap strcat "^" strcat
   setNetColor
 ;
@@ -634,6 +638,7 @@ $def ALIASDIR   "/Aliases/"
   dup STR-blank? if
     pop pop exit
   then
+  toupper
   ansi_strip "^" swap strcat "^" strcat
   setMessageColor
 ;
