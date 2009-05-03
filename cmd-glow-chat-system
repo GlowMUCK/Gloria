@@ -2,7 +2,7 @@ wh me=Beginning installation of cmd-glow-chat-system
 @prog cmd-glow-chat-system
 1 99999 d
 1 i
-( cmd-chat-system: $Date: 2009/05/03 18:43:51 $ $Revision: 1.9 $             )
+( cmd-chat-system: $Date: 2009/05/03 18:47:17 $ $Revision: 1.10 $             )
 ( Purpose: Provides a muckwide chat network                                   )
 ( Author: Feaelin Moilar                                                      )
 ( Contributors:                                                               )
@@ -10,6 +10,9 @@ wh me=Beginning installation of cmd-glow-chat-system
 ( --------------------------------------------------------------------------- )
 (
   $Log: cmd-glow-chat-system,v $
+  Revision 1.10  2009/05/03 18:47:17  feaelin
+  Updated help.
+
   Revision 1.9  2009/05/03 18:43:51  feaelin
   color codes in upper case
 
@@ -221,8 +224,8 @@ $def ALIASDIR   "/Aliases/"
  
 : menu-header ( S-MenuName -- )
   "^WHITE^------------------------------------------------------------------------^RESET^"
-  "^GREEN^  Glow Chat System                                        ^FOREST^" 
-  "$Revision: 1.9 $" 1 strcut swap pop dup strlen 1 - strcut pop strcat
+  "^GREEN^  GLORIA: Glow Chat System                                ^FOREST^" 
+  "$Revision: 1.10 $" 1 strcut swap pop dup strlen 1 - strcut pop strcat
   ": ^YELLOW^" ": " subst
   "^FOREST^  By Feaelin Moilar (Iain E. Davis)                  ^YELLOW^"
   4 rotate dup strlen 19 swap - "                   " 
