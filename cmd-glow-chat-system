@@ -2,7 +2,7 @@ wh me=Beginning installation of cmd-glow-chat-system
 @prog cmd-glow-chat-system
 1 99999 d
 1 i
-( cmd-chat-system: $Date: 2009/05/03 18:47:17 $ $Revision: 1.10 $             )
+( cmd-chat-system: $Date: 2009/05/03 18:49:18 $ $Revision: 1.11 $             )
 ( Purpose: Provides a muckwide chat network                                   )
 ( Author: Feaelin Moilar                                                      )
 ( Contributors:                                                               )
@@ -10,6 +10,9 @@ wh me=Beginning installation of cmd-glow-chat-system
 ( --------------------------------------------------------------------------- )
 (
   $Log: cmd-glow-chat-system,v $
+  Revision 1.11  2009/05/03 18:49:18  feaelin
+  Updated menu header
+
   Revision 1.10  2009/05/03 18:47:17  feaelin
   Updated help.
 
@@ -143,6 +146,15 @@ $def ALIASDIR   "/Aliases/"
   DBITEM swap rot setprop
 ;
  
+: getSayMessageColor ( S-ShortName -- S-SayMessageColor )
+  DBITEM CHANNELDIR rot strcat "/SayMessageColor" strcat getpropstr
+;
+ 
+: setSayMessageColor ( S-ShortName S-SayMessageColor -- )
+  swap CHANNELDIR swap strcat "/SayMessageColor" strcat
+  DBITEM swap rot setprop
+;
+ 
 : getGuestTalk ( S-ShortName -- B-GuestTalk )
   DBITEM CHANNELDIR rot strcat "/GuestTalk" strcat getpropval
 ;
@@ -225,7 +237,7 @@ $def ALIASDIR   "/Aliases/"
 : menu-header ( S-MenuName -- )
   "^WHITE^------------------------------------------------------------------------^RESET^"
   "^GREEN^  GLORIA: Glow Chat System                                ^FOREST^" 
-  "$Revision: 1.10 $" 1 strcut swap pop dup strlen 1 - strcut pop strcat
+  "$Revision: 1.11 $" 1 strcut swap pop dup strlen 1 - strcut pop strcat
   ": ^YELLOW^" ": " subst
   "^FOREST^  By Feaelin Moilar (Iain E. Davis)                  ^YELLOW^"
   4 rotate dup strlen 19 swap - "                   " 
@@ -268,7 +280,9 @@ $def ALIASDIR   "/Aliases/"
       swap strcat
     then
   else
-    " says, \"" strcat swap strcat "\"" strcat
+    " says, \"" getShortName getSayMessageColor strcat
+    strcat swap strcat getShortName getMessageColor strcat
+    "\"" strcat
   then
   ansi_notify
 ;
@@ -339,64 +353,69 @@ $def ALIASDIR   "/Aliases/"
   4 popn
 ;
  
-: canTalk? ( -- bool )
-  getShortName 
+( Either returns "" if okay, or an errormessage if not )
+: canTalk? ( D-Player -- S-ErrorMessage )
+  getShortName
   dup STR-blank? if
-    pop
-    me @ "^FAIL^Invalid channel alias ^MOVE^'"
-    command @ strcat "'^FAIL^." strcat ansi_notify
-    0 exit
+    pop pop
+    "^FAIL^Invalid channel alias ^MOVE^'"
+    command @ strcat "'^FAIL^." strcat
+    exit
   then
   dup getActive
   dup STR-blank? if
-    pop
-    me @ "^FAIL^Channel alias ^MOVE^'" command @ strcat
-    "^MOVE^'^FAIL^ is not bound to a channel." strcat ansi_notify
-    0 exit
+    3 popn
+    "^FAIL^Channel alias ^MOVE^'" command @ strcat
+    "^MOVE^'^FAIL^ is not bound to a channel." strcat
+    exit
   then
   "Inactive" strcmp not if
-    me @ "^FAIL^Sorry, the ^MOVE^" rot getFullName
-    strcat "^FAIL^ is disabled." strcat ansi_notify
-    0 exit
+    pop pop
+    "^FAIL^Sorry, the ^MOVE^" rot getFullName
+    strcat "^FAIL^ is disabled." strcat
+    exit
   then
-  me @ "GUEST" flag? if
+  over "GUEST" flag? if
     dup getGuestTalk not if
-      me @ "^FAIL^The ^MOVE^" rot getFullName strcat
-      "^FAIL^ does not allow guest characters to talk." strcat ansi_notify
-      0 exit
+      pop pop
+      "^FAIL^The ^MOVE^" rot getFullName strcat
+      "^FAIL^ does not allow guest characters to talk." strcat
+      exit
     then
   then
-  me @ player? not if
+  over player? not if
    ( thing+zombie+zombieTalk is still allowed )
-    me @ thing? if
-      me @ "ZOMBIE" flag? if
+    over thing? if
+      over "ZOMBIE" flag? if
         dup getZombieTalk not if
-          me @ "^FAIL^The ^MOVE^" rot getFullName strcat
-          "^FAIL^ does not allow zombie characters to talk." strcat ansi_notify
-          0 exit
+          pop pop
+          "^FAIL^The ^MOVE^" rot getFullName strcat
+          "^FAIL^ does not allow zombie characters to talk." strcat
+          exit
         then
       else
-        pop
-        me @ "^FAIL^Permission Denied." ansi_notify
-        0 exit
+        pop pop
+        "^FAIL^Permission Denied."
+        exit
       then
     else
-      pop
-      me @ "^FAIL^Permission Denied." ansi_notify
-      0 exit
+      pop pop
+      "^FAIL^Permission Denied."
+      exit
     then
   then
   dup getLevelTalk
-  me @ mlevel > if
-    me @ "^FAIL^Insufficient mucker/wizard level to talk on the ^MOVE^"
-    rot getFullName strcat "^FAIL^." strcat ansi_notify
-    0 exit
+  3 pick mlevel > if
+    "^FAIL^Insufficient mucker/wizard level to talk on the ^MOVE^"
+    swap getFullName strcat "^FAIL^." strcat
+    swap pop
+    exit
   then
   ( Someday, do group permissions here )
 
   ( Wow...passed all of it? )
-  pop
-  1
+  pop pop
+  ""
 ;
  
 : isExpert? ( D-player -- boolean )
@@ -650,6 +669,34 @@ $def ALIASDIR   "/Aliases/"
   setMessageColor
 ;
  
+: say-msg-color-query ( S-ShortName -- )
+  "SAYMSG-COLOR" menu-header
+  me @ " " ansi_notify
+  dup getSayMessageColor dup "" strcmp if
+    "^^" "^" subst
+    me @ "^INFO^Current say message color: ^MOVE^" rot strcat ansi_notify
+  else
+    pop
+  then
+  me @
+  "^INFO^Enter new color for say messages or enter a period by itself to keep the"
+  ansi_notify
+  me @
+  "^INFO^current one:"
+  ansi_notify
+  read
+  me @ "^SUCC^" 3 pick strcat ansi_notify
+  dup "." strcmp not if
+    pop pop exit
+  then
+  dup STR-blank? if
+    pop pop exit
+  then
+  toupper
+  ansi_strip "^" swap strcat "^" strcat
+  setSayMessageColor
+;
+ 
 : status-toggle ( S-ShortName -- )
   dup getActive "Active" strcmp not if
     me @ "^SUCC^Status toggled to Inactive." ansi_notify
@@ -784,27 +831,30 @@ $def ALIASDIR   "/Aliases/"
 : channel-editor ( S-ShortName -- )
   BEGIN
     "CHANNEL-EDIT" menu-header
-    " ^INFO^1. ^WHITE^Channel Short Name:    ^MOVE^"
+    " ^INFO^ 1. ^WHITE^Channel Short Name:    ^MOVE^"
     2 pick strcat
-    " ^INFO^2. ^WHITE^Channel Full Name:     ^MOVE^"
+    " ^INFO^ 2. ^WHITE^Channel Full Name:     ^MOVE^"
     3 pick getFullName strcat
-    " ^INFO^3. ^WHITE^Channel Aliases:       ^MOVE^"
+    " ^INFO^ 3. ^WHITE^Channel Aliases:       ^MOVE^"
     4 pick getAliases strcat
-    " ^INFO^4. ^WHITE^Opt-In/Opt-Out:        ^MOVE^"
+    " ^INFO^ 4. ^WHITE^Opt-In/Opt-Out:        ^MOVE^"
     5 pick getOptStatus strcat
-    " ^INFO^5. ^WHITE^Network ID Color:      ^MOVE^"
+    " ^INFO^ 5. ^WHITE^Network ID Color:      ^MOVE^"
     6 pick getNetColor "^^" "^" subst
     strcat
-    " ^INFO^6. ^WHITE^Network Message Color: ^MOVE^"
+    " ^INFO^ 6. ^WHITE^Message Color:         ^MOVE^"
     7 pick getMessageColor "^^" "^" subst
     strcat
-    " ^INFO^7. ^WHITE^Channel Status:        ^MOVE^"
-    8 pick getActive strcat
-    " ^INFO^8. ^WHITE^Edit Permissions"
-    " ^INFO^9. ^WHITE^Edit Optee List"
-    " ^INFO^Q. ^WHITE^Quit Menu"
-    " ^INFO^E. ^WHITE^Exit Menu System"
-    11 EDIT-ansi_display
+    " ^INFO^ 7. ^WHITE^Say Message Color:     ^MOVE^"
+    8 pick getSayMessageColor "^^" "^" subst
+    strcat
+    " ^INFO^ 8. ^WHITE^Channel Status:        ^MOVE^"
+    9 pick getActive strcat
+    " ^INFO^ 9. ^WHITE^Edit Permissions"
+    " ^INFO^10. ^WHITE^Edit Optee List"
+    " ^INFO^ Q. ^WHITE^Quit Menu"
+    " ^INFO^ E. ^WHITE^Exit Menu System"
+    12 EDIT-ansi_display
     read tolower
     case
       "q" strcmp not when exit end
@@ -819,8 +869,9 @@ $def ALIASDIR   "/Aliases/"
         "4" strcmp not when dup opt-query 0 end
         "5" strcmp not when dup id-color-query 0 end
         "6" strcmp not when dup msg-color-query 0 end
-        "7" strcmp not when dup status-toggle 0 end
-        "8" strcmp not when dup menu-channel-permissions end
+        "7" strcmp not when dup say-msg-color-query 0 end
+        "8" strcmp not when dup status-toggle 0 end
+        "9" strcmp not when dup menu-channel-permissions end
       then
       default pop me @ "^FAIL^Invalid Option!" ansi_notify 0 end
     endcase
@@ -888,20 +939,25 @@ $def ALIASDIR   "/Aliases/"
 ;
  
 : printWhoHeader ( -- )
-  me @ "^SUCC^/-------------------\\" ansi_notify
-  me @ "^SUCC^| ^WHITE^PLAYER^SUCC^            |" ansi_notify
-  me @ "^SUCC^|-------------------|" ansi_notify
+  me @ "^SUCC^/---------------------------\\" ansi_notify
+  me @ "^SUCC^| ^WHITE^PLAYER^SUCC^            | Talk? |" ansi_notify
+  me @ "^SUCC^|-------------------+-------|" ansi_notify
 ;
  
 : printWhoLine ( d -- )
   "^SUCC^| ^WHITE^" over name dup " " 16 STR-fillfield
    "  ^SUCC^| " strcat strcat strcat
+  swap canTalk? STR-blank? if
+  	" ^WHITE^Yes  ^SUCC^|" 
+  else
+    " ^WHITE^No   ^SUCC^|"
+  then
+  strcat
   me @ swap ansi_notify
-  pop
 ;
  
 : printWhoTail ( -- )
-  me @ "^SUCC^\\-------------------/" ansi_notify
+  me @ "^SUCC^\\---------------------------/" ansi_notify
 ;
  
 : whoChannel ( s -- )
@@ -956,10 +1012,10 @@ $def ALIASDIR   "/Aliases/"
   then
   dup STR-command dup "" strcmp not if
     pop
-    canTalk? if
-      Talk ( output to appropiate channel )
+    me @ canTalk? dup STR-blank? if
+      pop Talk ( output to appropiate channel )
     else
-      pop
+      me @ swap ansi_notify pop
     then
     exit
   then
