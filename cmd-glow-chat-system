@@ -2,53 +2,56 @@ wh me=Beginning installation of cmd-glow-chat-system
 @prog cmd-glow-chat-system
 1 99999 d
 1 i
-( cmd-chat-system: $Date: 2009/05/05 15:43:14 $ $Revision: 1.13 $             )
+( cmd-chat-system: $Date: 2009/05/13 16:01:40 $ $Revision: 1.14 $             )
 ( Purpose: Provides a muckwide chat network                                   )
 ( Author: Feaelin Moilar                                                      )
 ( Contributors:                                                               )
-( Dependencies: lib-strings, lib-edit, lib-case                               )
+( Dependencies: lib-strings, lib-edit, lib-case, lib-lmgr                     )
 ( --------------------------------------------------------------------------- )
 (
   $Log: cmd-glow-chat-system,v $
+  Revision 1.14  2009/05/13 16:01:40  feaelin
+  Moved color editing to its own menu.
+ 
   Revision 1.13  2009/05/05 15:43:14  feaelin
   Revised help so that it has a 'basic' version for the
   non-channel specific commands
-
+ 
   Revision 1.12  2009/05/04 19:01:15  feaelin
   Updated /who to show who can talk
   Refactored canTalk? to return "" or error and be generic
-
+ 
   Revision 1.11  2009/05/03 18:49:18  feaelin
   Updated menu header
-
+ 
   Revision 1.10  2009/05/03 18:47:17  feaelin
   Updated help.
-
+ 
   Revision 1.9  2009/05/03 18:43:51  feaelin
   color codes in upper case
-
+ 
   Revision 1.8  2009/05/03 18:09:06  feaelin
   /who added
-
+ 
   Revision 1.7  2009/05/01 23:09:24  feaelin
   Updated help.
-
+ 
   Revision 1.6  2009/04/30 01:26:37  feaelin
   Added /join to channel.
-
+ 
   Revision 1.5  2009/04/28 18:21:27  feaelin
   Added permissions editor; support for yes/no permissions done.
-
+ 
   Revision 1.4  2009/04/28 17:15:13  feaelin
   Removed vestigial prompted channel edit
   Added code to channel editor so that the exit name/alias list is updated.
-
+ 
   Revision 1.3  2009/04/28 16:55:54  feaelin
   Completed add menu.
-
+ 
   Revision 1.2  2009/04/26 14:29:53  feaelin
   Fixed various installer script issues caused by the rename.
-
+ 
   Revision 1.1  2009/04/26 14:25:08  feaelin
   Initial revision
 
@@ -58,12 +61,13 @@ wh me=Beginning installation of cmd-glow-chat-system
 $include $lib/strings
 $include $lib/edit
 $include $lib/case
+$include $lib/lmgr
 $include $lib/mv-cp
  
 $def DBITEM     trig
 $def CHANNELDIR "/Channels/"
-$def ALIASDIR   "/Aliases/" 
- 
+$def ALIASDIR   "/Aliases/"
+$def ALPHACHARS "abcdefghijklmnopqrstuvwxyz1234567890" 
 : getNetSeparator ( -- S-Separator )
   DBITEM "/NetSeparator" getpropstr
 ;
@@ -245,7 +249,7 @@ $def ALIASDIR   "/Aliases/"
 : menu-header ( S-MenuName -- )
   "^WHITE^------------------------------------------------------------------------^RESET^"
   "^GREEN^  GLORIA: Glow Chat System                                ^FOREST^" 
-  "$Revision: 1.13 $" 1 strcut swap pop dup strlen 1 - strcut pop strcat
+  "$Revision: 1.14 $" 1 strcut swap pop dup strlen 1 - strcut pop strcat
   ": ^YELLOW^" ": " subst
   "^FOREST^  By Feaelin Moilar (Iain E. Davis)                  ^YELLOW^"
   4 rotate dup strlen 19 swap - "                   " 
@@ -287,7 +291,41 @@ $def ALIASDIR   "/Aliases/"
     7 EDIT-ansi_display
   then
 ;
-
+ 
+: buildMessage ( B-NormalMessage? S-BaseMessage -- S-Message )
+	dup 1 strcut pop
+	":;" swap	instr if ( If emote? )
+		1 strcut swap pop
+		dup 1 strcut pop
+		ALPHACHARS swap instr if ( If alphanumeric )
+			" " swap strcat
+		then ( If Alphanumeric )
+		swap if ( name prepend )
+			me @ name swap strcat
+		then ( name prepend )
+		"^MESSAGECOLOR^" swap strcat
+	else ( If emote?..in this case, it isn't )
+		swap pop
+		"^MESSAGECOLOR^" me @ name strcat " says, \"^SAYMESSAGECOLOR^"
+		strcat swap strcat
+		"^MESSAGECOLOR^\"" strcat
+	then
+;
+ 
+: logMessage ( S-Message -- )
+	( Substitute the netseparator with the netseparator plus the
+	( player's dbref )
+	getNetSeparator getNetSeparator
+	" (^YELLOW^#" me @ intostr strcat "^MESSAGECOLOR^) " strcat strcat subst
+	( Fill in the message colors )
+	getShortName getMessageColor "^MESSAGECOLOR^" subst
+	getShortName getSayMessageColor "^SAYMESSAGECOLOR^" subst
+	( Store it to the log. )
+	CHANNELDIR getShortName strcat "/Log" strcat
+	dup DBITEM LMGR-getcount
+	1 + swap DBITEM LMGR-PutElem
+;
+ 
 : NotifyPlayer ( D-player S-message -- )
   getShortName getNetColor getShortName strcat
   getNetSeparator strcat " " strcat
@@ -338,6 +376,7 @@ $def ALIASDIR   "/Aliases/"
 ;
  
 : Talk ( S-message -- )
+  1 over buildMessage logMessage 
   online dup 2 + rotate ( connected-RNG S-message )
   getShortName "" ( connected-RNG S-message S-Channel S-sent )
   BEGIN
