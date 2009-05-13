@@ -2,7 +2,7 @@ wh me=Beginning installation of cmd-glow-chat-system
 @prog cmd-glow-chat-system
 1 99999 d
 1 i
-( cmd-chat-system: $Date: 2009/05/13 16:01:40 $ $Revision: 1.14 $             )
+( cmd-chat-system: $Date: 2009/05/13 18:13:14 $ $Revision: 1.15 $             )
 ( Purpose: Provides a muckwide chat network                                   )
 ( Author: Feaelin Moilar                                                      )
 ( Contributors:                                                               )
@@ -10,6 +10,10 @@ wh me=Beginning installation of cmd-glow-chat-system
 ( --------------------------------------------------------------------------- )
 (
   $Log: cmd-glow-chat-system,v $
+  Revision 1.15  2009/05/13 18:13:14  feaelin
+  Completed logMessage
+  Added buildMessage, a more generic function to build the message string.
+ 
   Revision 1.14  2009/05/13 16:01:40  feaelin
   Moved color editing to its own menu.
  
@@ -249,7 +253,7 @@ $def ALPHACHARS "abcdefghijklmnopqrstuvwxyz1234567890"
 : menu-header ( S-MenuName -- )
   "^WHITE^------------------------------------------------------------------------^RESET^"
   "^GREEN^  GLORIA: Glow Chat System                                ^FOREST^" 
-  "$Revision: 1.14 $" 1 strcut swap pop dup strlen 1 - strcut pop strcat
+  "$Revision: 1.15 $" 1 strcut swap pop dup strlen 1 - strcut pop strcat
   ": ^YELLOW^" ": " subst
   "^FOREST^  By Feaelin Moilar (Iain E. Davis)                  ^YELLOW^"
   4 rotate dup strlen 19 swap - "                   " 
@@ -327,25 +331,11 @@ $def ALPHACHARS "abcdefghijklmnopqrstuvwxyz1234567890"
 ;
  
 : NotifyPlayer ( D-player S-message -- )
-  getShortName getNetColor getShortName strcat
-  getNetSeparator strcat " " strcat
-  getShortName getMessageColor strcat me @ name strcat
-  over 1 strcut pop
-  ":;" swap instr if ( pose? )
-    swap 1 strcut swap pop swap
-    over 1 strcut pop
-    "abcdefghijklmnopqrstuvwxyz1234567890" swap
-    instr if ( does it start with a letter? )
-      " " strcat  swap strcat
-    else
-      swap strcat
-    then
-  else
-    " says, \"" getShortName getSayMessageColor strcat
-    strcat swap strcat getShortName getMessageColor strcat
-    "\"" strcat
-  then
-  ansi_notify
+	getShortName getNetColor getShortName strcat getNetSeparator strcat
+	" " strcat swap strcat
+	getShortName getMessageColor "^MESSAGECOLOR^" subst
+	getShortName getSayMessageColor "^SAYMESSAGECOLOR^" subst
+	ansi_notify
 ;
  
 : canListen? ( D-player  -- bool )
@@ -376,7 +366,7 @@ $def ALPHACHARS "abcdefghijklmnopqrstuvwxyz1234567890"
 ;
  
 : Talk ( S-message -- )
-  1 over buildMessage logMessage 
+  1 over buildMessage dup logMessage 
   online dup 2 + rotate ( connected-RNG S-message )
   getShortName "" ( connected-RNG S-message S-Channel S-sent )
   BEGIN
