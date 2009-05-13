@@ -2,7 +2,7 @@ wh me=Beginning installation of cmd-glow-chat-system
 @prog cmd-glow-chat-system
 1 99999 d
 1 i
-( cmd-chat-system: $Date: 2009/05/04 19:01:15 $ $Revision: 1.12 $             )
+( cmd-chat-system: $Date: 2009/05/05 15:43:14 $ $Revision: 1.13 $             )
 ( Purpose: Provides a muckwide chat network                                   )
 ( Author: Feaelin Moilar                                                      )
 ( Contributors:                                                               )
@@ -10,6 +10,10 @@ wh me=Beginning installation of cmd-glow-chat-system
 ( --------------------------------------------------------------------------- )
 (
   $Log: cmd-glow-chat-system,v $
+  Revision 1.13  2009/05/05 15:43:14  feaelin
+  Revised help so that it has a 'basic' version for the
+  non-channel specific commands
+
   Revision 1.12  2009/05/04 19:01:15  feaelin
   Updated /who to show who can talk
   Refactored canTalk? to return "" or error and be generic
@@ -241,7 +245,7 @@ $def ALIASDIR   "/Aliases/"
 : menu-header ( S-MenuName -- )
   "^WHITE^------------------------------------------------------------------------^RESET^"
   "^GREEN^  GLORIA: Glow Chat System                                ^FOREST^" 
-  "$Revision: 1.12 $" 1 strcut swap pop dup strlen 1 - strcut pop strcat
+  "$Revision: 1.13 $" 1 strcut swap pop dup strlen 1 - strcut pop strcat
   ": ^YELLOW^" ": " subst
   "^FOREST^  By Feaelin Moilar (Iain E. Davis)                  ^YELLOW^"
   4 rotate dup strlen 19 swap - "                   " 
@@ -292,7 +296,7 @@ $def ALIASDIR   "/Aliases/"
   ":;" swap instr if ( pose? )
     swap 1 strcut swap pop swap
     over 1 strcut pop
-    "abcdefghijklmnopqrstuvwxyz" swap
+    "abcdefghijklmnopqrstuvwxyz1234567890" swap
     instr if ( does it start with a letter? )
       " " strcat  swap strcat
     else
@@ -374,6 +378,11 @@ $def ALIASDIR   "/Aliases/"
  
 ( Either returns "" if okay, or an errormessage if not )
 : canTalk? ( D-Player -- S-ErrorMessage )
+	dup canListen? not if
+	  pop
+	  "^FAIL^Insufficient permissions to listen, therefore cannot talk."
+	  exit
+	then
   getShortName
   dup STR-blank? if
     pop pop
@@ -784,7 +793,43 @@ $def ALIASDIR   "/Aliases/"
   setLevelListen
 ;
  
-( channel-editor: menu for editing general channel settings )
+( menu for editing channel colors )
+: menu-channel-colors ( S-ShortName -- )
+  BEGIN
+    "COLOR-EDIT" menu-header
+    " ^INFO^1. ^WHITE^Network ID Color:      ^MOVE^"
+    2 pick getNetColor "^^" "^" subst
+    strcat
+    " ^INFO^2. ^WHITE^Message Color:         ^MOVE^"
+    3 pick getMessageColor "^^" "^" subst
+    strcat
+    " ^INFO^3. ^WHITE^Say Message Color:     ^MOVE^"
+    4 pick getSayMessageColor "^^" "^" subst
+    strcat
+    " ^INFO^Q. ^WHITE^Quit Menu"
+    " ^INFO^E. ^WHITE^Exit Menu System"
+    5 EDIT-ansi_display
+    read tolower
+    case
+      "q" strcmp not when
+        me @ "^SUCC^Channel Colors Editor Exited." ansi_notify     
+        0 exit
+      end
+      "e" strcmp not when
+        me @ "^SUCC^Channel Colors Editor Exited." ansi_notify
+        1 exit
+      end
+      "1" strcmp not when dup id-color-query 0 end
+      "2" strcmp not when dup msg-color-query 0 end
+      "3" strcmp not when dup say-msg-color-query 0 end
+      default pop me @ "^FAIL^Invalid Option!" ansi_notify 0 end
+    endcase
+  UNTIL
+  pop 0
+  me @ "^SUCC^Channel Colors Editor Exited." ansi_notify
+; 
+ 
+( menu for editing general channel permissions )
 : menu-channel-permissions ( S-ShortName -- )
   BEGIN
     "CHANNEL-EDIT" menu-header
@@ -850,30 +895,22 @@ $def ALIASDIR   "/Aliases/"
 : channel-editor ( S-ShortName -- )
   BEGIN
     "CHANNEL-EDIT" menu-header
-    " ^INFO^ 1. ^WHITE^Channel Short Name:    ^MOVE^"
+    " ^INFO^1. ^WHITE^Channel Short Name:    ^MOVE^"
     2 pick strcat
-    " ^INFO^ 2. ^WHITE^Channel Full Name:     ^MOVE^"
+    " ^INFO^2. ^WHITE^Channel Full Name:     ^MOVE^"
     3 pick getFullName strcat
-    " ^INFO^ 3. ^WHITE^Channel Aliases:       ^MOVE^"
+    " ^INFO^3. ^WHITE^Channel Aliases:       ^MOVE^"
     4 pick getAliases strcat
-    " ^INFO^ 4. ^WHITE^Opt-In/Opt-Out:        ^MOVE^"
+    " ^INFO^4. ^WHITE^Opt-In/Opt-Out:        ^MOVE^"
     5 pick getOptStatus strcat
-    " ^INFO^ 5. ^WHITE^Network ID Color:      ^MOVE^"
-    6 pick getNetColor "^^" "^" subst
-    strcat
-    " ^INFO^ 6. ^WHITE^Message Color:         ^MOVE^"
-    7 pick getMessageColor "^^" "^" subst
-    strcat
-    " ^INFO^ 7. ^WHITE^Say Message Color:     ^MOVE^"
-    8 pick getSayMessageColor "^^" "^" subst
-    strcat
-    " ^INFO^ 8. ^WHITE^Channel Status:        ^MOVE^"
-    9 pick getActive strcat
-    " ^INFO^ 9. ^WHITE^Edit Permissions"
-    " ^INFO^10. ^WHITE^Edit Optee List"
-    " ^INFO^ Q. ^WHITE^Quit Menu"
-    " ^INFO^ E. ^WHITE^Exit Menu System"
-    12 EDIT-ansi_display
+    " ^INFO^5. ^WHITE^Channel Status:        ^MOVE^"
+    6 pick getActive strcat
+    " ^INFO^6. ^WHITE^Edit Colors"
+    " ^INFO^7. ^WHITE^Edit Permissions"
+    " ^INFO^8. ^WHITE^Edit Optee List"
+    " ^INFO^Q. ^WHITE^Quit Menu"
+    " ^INFO^E. ^WHITE^Exit Menu System"
+    10 EDIT-ansi_display
     read tolower
     case
       "q" strcmp not when exit end
@@ -886,11 +923,9 @@ $def ALIASDIR   "/Aliases/"
         "2" strcmp not when dup full-name-query 0 end
         "3" strcmp not when dup alias-list-query 0 end
         "4" strcmp not when dup opt-query 0 end
-        "5" strcmp not when dup id-color-query 0 end
-        "6" strcmp not when dup msg-color-query 0 end
-        "7" strcmp not when dup say-msg-color-query 0 end
-        "8" strcmp not when dup status-toggle 0 end
-        "9" strcmp not when dup menu-channel-permissions end
+        "5" strcmp not when dup status-toggle 0 end
+        "6" strcmp not when dup menu-channel-colors end
+        "7" strcmp not when dup menu-channel-permissions end
       then
       default pop me @ "^FAIL^Invalid Option!" ansi_notify 0 end
     endcase
@@ -929,6 +964,11 @@ $def ALIASDIR   "/Aliases/"
 ;
  
 : joinChannel ( -- )
+	me @ canListen? not if
+		me @ "^FAIL^You have insufficient permissions to listen to that channel."
+		ansi_notify
+		exit
+	then 
   getShortName dup getOptStatus
   "I" strcmp not if
     dup getOptList me @ intostr "#" swap strcat "#" strcat
