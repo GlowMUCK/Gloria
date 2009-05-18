@@ -2,7 +2,7 @@ wh me=Beginning installation of cmd-glow-chat-system
 @prog cmd-glow-chat-system
 1 99999 d
 1 i
-( cmd-chat-system: $Date: 2009/05/13 20:23:02 $ $Revision: 1.16 $             )
+( cmd-chat-system: $Date: 2009/05/18 22:24:32 $ $Revision: 1.17 $             )
 ( Purpose: Provides a muckwide chat network                                   )
 ( Author: Feaelin Moilar                                                      )
 ( Contributors:                                                               )
@@ -10,6 +10,10 @@ wh me=Beginning installation of cmd-glow-chat-system
 ( --------------------------------------------------------------------------- )
 (
   $Log: cmd-glow-chat-system,v $
+  Revision 1.17  2009/05/18 22:24:32  feaelin
+  Add announcements of join/ujoin/connect/disconnect
+  Fixed bug where capitals after emote would despace
+
   Revision 1.16  2009/05/13 20:23:02  feaelin
   Refactored NotifyPlayer so that it works with the buildMessage function
  
@@ -312,11 +316,19 @@ $def SYSTEMMARKER "(Chat System Announcement)"
   then
 ;
  
+: isListening? ( D-player S-ShortName -- )
+  dup getOptStatus "I" strcmp not if
+  	getOptList swap intostr "#" swap strcat "#" strcat instr
+  else
+  	getOptList swap intostr "#" swap strcat "#" strcat instr not
+  then
+;
+ 
 : menu-header ( S-MenuName -- )
 	24 strcut pop
   "^WHITE^------------------------------------------------------------------------^RESET^"
   "^GREEN^  GLORIA: Glow Chat System                                ^FOREST^" 
-  "$Revision: 1.16 $" 1 strcut swap pop dup strlen 1 - strcut pop strcat
+  "$Revision: 1.17 $" 1 strcut swap pop dup strlen 1 - strcut pop strcat
   ": ^YELLOW^" ": " subst
   "^FOREST^  By Feaelin Moilar (Iain E. Davis)             ^YELLOW^"
   4 rotate dup strlen 24 swap - "                   " 
@@ -1249,7 +1261,7 @@ $def SYSTEMMARKER "(Chat System Announcement)"
 		dup dup "/" rinstr strcut swap pop ( S-propname S-shortname )
 		command ! ( Effectively making all getShortName's work )
 		getShortName getAnnounceConnect if ( This channel announces connects? )
-			me @ canListen? if		
+			me @ getShortName isListening? if		
 				":has connected and is listening to " getShortName getFullName strcat
 				". " strcat getShortName getNetColor strcat SYSTEMMARKER strcat
 				Talk
@@ -1269,7 +1281,7 @@ $def SYSTEMMARKER "(Chat System Announcement)"
 		dup dup "/" rinstr strcut swap pop ( S-propname S-shortname )
 		command ! ( Effectively making all getShortName's work )
 		getShortName getAnnounceDisconnect if ( This channel announces disconnect? )
-			me @ canListen? if		
+			me @ isListening? if		
 				":disconnected and therefore not listening to " getShortName getFullName
 				strcat ". " strcat getShortName getNetColor strcat SYSTEMMARKER strcat
 				Talk
