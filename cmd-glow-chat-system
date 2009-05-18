@@ -2,7 +2,7 @@ wh me=Beginning installation of cmd-glow-chat-system
 @prog cmd-glow-chat-system
 1 99999 d
 1 i
-( cmd-chat-system: $Date: 2009/05/13 18:13:14 $ $Revision: 1.15 $             )
+( cmd-chat-system: $Date: 2009/05/13 20:23:02 $ $Revision: 1.16 $             )
 ( Purpose: Provides a muckwide chat network                                   )
 ( Author: Feaelin Moilar                                                      )
 ( Contributors:                                                               )
@@ -10,6 +10,9 @@ wh me=Beginning installation of cmd-glow-chat-system
 ( --------------------------------------------------------------------------- )
 (
   $Log: cmd-glow-chat-system,v $
+  Revision 1.16  2009/05/13 20:23:02  feaelin
+  Refactored NotifyPlayer so that it works with the buildMessage function
+ 
   Revision 1.15  2009/05/13 18:13:14  feaelin
   Completed logMessage
   Added buildMessage, a more generic function to build the message string.
@@ -68,10 +71,17 @@ $include $lib/case
 $include $lib/lmgr
 $include $lib/mv-cp
  
-$def DBITEM     trig
 $def CHANNELDIR "/Channels/"
 $def ALIASDIR   "/Aliases/"
-$def ALPHACHARS "abcdefghijklmnopqrstuvwxyz1234567890" 
+$def ALPHACHARS "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"
+$def SYSTEMMARKER "(Chat System Announcement)"
+ 
+: DBITEM
+	trig dup #-1 dbcmp if
+		pop "$muf/chatobject" match
+	then
+;
+ 
 : getNetSeparator ( -- S-Separator )
   DBITEM "/NetSeparator" getpropstr
 ;
@@ -250,13 +260,66 @@ $def ALPHACHARS "abcdefghijklmnopqrstuvwxyz1234567890"
   DBITEM swap rot setprop
 ;
  
+: getAnnounceJoin ( S-ShortName -- B-AnnounceJoin )
+  DBITEM CHANNELDIR rot strcat "/AnnounceJoin" strcat getpropval
+;
+ 
+: toggleAnnounceJoin ( S-ShortName -- )
+  CHANNELDIR swap strcat "/AnnounceJoin" strcat 
+  dup DBITEM swap getpropval if
+    DBITEM swap 0 setprop
+  else
+    DBITEM swap 1 setprop
+  then
+;
+ 
+: getAnnounceUnjoin ( S-ShortName -- B-AnnounceUnjoin )
+  DBITEM CHANNELDIR rot strcat "/AnnounceUnjoin" strcat getpropval
+;
+ 
+: toggleAnnounceUnjoin ( S-ShortName -- )
+  CHANNELDIR swap strcat "/AnnounceUnjoin" strcat 
+  dup DBITEM swap getpropval if
+    DBITEM swap 0 setprop
+  else
+    DBITEM swap 1 setprop
+  then
+;
+ 
+: getAnnounceConnect ( S-ShortName -- B-AnnounceConnect )
+  DBITEM CHANNELDIR rot strcat "/AnnounceConnect" strcat getpropval
+;
+ 
+: toggleAnnounceConnect ( S-ShortName -- )
+  CHANNELDIR swap strcat "/AnnounceConnect" strcat 
+  dup DBITEM swap getpropval if
+    DBITEM swap 0 setprop
+  else
+    DBITEM swap 1 setprop
+  then
+;
+ 
+: getAnnounceDisconnect ( S-ShortName -- B-AnnounceDisconnect )
+  DBITEM CHANNELDIR rot strcat "/AnnounceDisconnect" strcat getpropval
+;
+ 
+: toggleAnnounceDisconnect ( S-ShortName -- )
+  CHANNELDIR swap strcat "/AnnounceDisconnect" strcat 
+  dup DBITEM swap getpropval if
+    DBITEM swap 0 setprop
+  else
+    DBITEM swap 1 setprop
+  then
+;
+ 
 : menu-header ( S-MenuName -- )
+	24 strcut pop
   "^WHITE^------------------------------------------------------------------------^RESET^"
   "^GREEN^  GLORIA: Glow Chat System                                ^FOREST^" 
-  "$Revision: 1.15 $" 1 strcut swap pop dup strlen 1 - strcut pop strcat
+  "$Revision: 1.16 $" 1 strcut swap pop dup strlen 1 - strcut pop strcat
   ": ^YELLOW^" ": " subst
-  "^FOREST^  By Feaelin Moilar (Iain E. Davis)                  ^YELLOW^"
-  4 rotate dup strlen 19 swap - "                   " 
+  "^FOREST^  By Feaelin Moilar (Iain E. Davis)             ^YELLOW^"
+  4 rotate dup strlen 24 swap - "                   " 
   swap strcut pop swap strcat strcat "^RESET^" strcat
   "^WHITE^------------------------------------------------------------------------^RESET^"
   4 EDIT-ansi_display
@@ -402,7 +465,7 @@ $def ALPHACHARS "abcdefghijklmnopqrstuvwxyz1234567890"
     4 pick 1 - dup 5 put
     0 =
   UNTIL
-  4 popn
+  5 popn
 ;
  
 ( Either returns "" if okay, or an errormessage if not )
@@ -545,7 +608,7 @@ $def ALPHACHARS "abcdefghijklmnopqrstuvwxyz1234567890"
 ;
  
 : full-name-query ( S-ShortName -- )
-  "FULL-NAME" menu-header
+  "FULL-NAME: " getShortName strcat menu-header
   me @ " " ansi_notify
   dup getFullName dup STR-blank? not if
     me @ "^INFO^Current full name: ^MOVE^" rot strcat ansi_notify
@@ -570,7 +633,7 @@ $def ALPHACHARS "abcdefghijklmnopqrstuvwxyz1234567890"
 ;
  
 : alias-list-query ( S-ShortName -- )
-  "ALIAS-LIST" menu-header
+  "ALIAS-LIST: " getShortName strcat menu-header
   me @ isExpert? not if
     me @
     "^NOTE^NOTE: When you enter an alias (or aliases) that is longer than three"
@@ -641,7 +704,7 @@ $def ALPHACHARS "abcdefghijklmnopqrstuvwxyz1234567890"
 ;
  
 : opt-query ( S-ShortName -- )
-  "OPT-STATUS" menu-header
+  "OPT-STATUS: " getShortName strcat menu-header
   me @ " " ansi_notify
   me @ isExpert? not if
     me @
@@ -671,7 +734,7 @@ $def ALPHACHARS "abcdefghijklmnopqrstuvwxyz1234567890"
 ;
  
 : id-color-query ( S-ShortName -- )
-  "NID-COLOR" menu-header
+  "NID-COLOR: " getShortName strcat menu-header
   me @ " " ansi_notify
   dup getNetColor dup "" strcmp if
     "^^" "^" subst
@@ -699,7 +762,7 @@ $def ALPHACHARS "abcdefghijklmnopqrstuvwxyz1234567890"
 ;
  
 : msg-color-query ( S-ShortName -- )
-  "MSG-COLOR" menu-header
+  "MSG-COLOR: " getShortName strcat menu-header
   me @ " " ansi_notify
   dup getMessageColor dup "" strcmp if
     "^^" "^" subst
@@ -727,7 +790,7 @@ $def ALPHACHARS "abcdefghijklmnopqrstuvwxyz1234567890"
 ;
  
 : say-msg-color-query ( S-ShortName -- )
-  "SAYMSG-COLOR" menu-header
+  "SAYMSG-COLOR: " getShortName strcat menu-header
   me @ " " ansi_notify
   dup getSayMessageColor dup "" strcmp if
     "^^" "^" subst
@@ -765,7 +828,7 @@ $def ALPHACHARS "abcdefghijklmnopqrstuvwxyz1234567890"
 ;
  
 : talk-level-query ( S-ShortName -- )
-  "TALK-LEVEL" menu-header
+  "TALK-LEVEL: " getShortName strcat menu-header
   me @ isExpert? not if
     me @ 
     "^NOTE^An m-level is the mucker or wizard level of the character. Levels 1,2,3"
@@ -794,7 +857,7 @@ $def ALPHACHARS "abcdefghijklmnopqrstuvwxyz1234567890"
 ;
  
 : listen-level-query ( S-ShortName -- )
-  "LISTEN-LEVEL" menu-header
+  "LISTEN-LEVEL: " getShortName strcat menu-header
   me @ isExpert? not if
     me @ 
     "^NOTE^An m-level is the mucker or wizard level of the character. Levels 1,2,3"
@@ -822,10 +885,65 @@ $def ALPHACHARS "abcdefghijklmnopqrstuvwxyz1234567890"
   setLevelListen
 ;
  
+: menu-channel-announcements ( S-ShortName -- )
+  BEGIN
+    "ANNOUNCE-EDIT: " getShortName strcat menu-header
+    " ^INFO^1. ^WHITE^Announce on join?:          ^MOVE^"
+    2 pick getAnnounceJoin if
+      "Yes"
+    else
+      "No"
+    then
+    strcat
+    " ^INFO^2. ^WHITE^Announce on unjoin?:        ^MOVE^"
+    3 pick getAnnounceUnjoin if
+      "Yes"
+    else
+      "No"
+    then
+    strcat
+    " ^INFO^3. ^WHITE^Announce on connect?:       ^MOVE^"
+    4 pick getAnnounceConnect if
+      "Yes"
+    else
+      "No"
+    then
+    strcat
+    " ^INFO^4. ^WHITE^Announce on disconnect?:    ^MOVE^"
+    5 pick getAnnounceDisconnect if
+    	"Yes"
+    else
+      "No"
+    then
+    strcat
+    " ^INFO^Q. ^WHITE^Quit Menu"
+    " ^INFO^E. ^WHITE^Exit Menu System"
+    6 EDIT-ansi_display
+    read tolower
+    case
+      "q" strcmp not when
+        me @ "^SUCC^Channel Announcements Editor Exited." ansi_notify     
+        0 exit
+      end
+      "e" strcmp not when
+        me @ "^SUCC^Channel Announcements Editor Exited." ansi_notify
+        1 exit
+      end
+      "1" strcmp not when dup toggleAnnounceJoin 0 end
+      "2" strcmp not when dup toggleAnnounceUnjoin 0 end
+      "3" strcmp not when dup toggleAnnounceConnect 0 end
+      "4" strcmp not when dup toggleAnnounceDisconnect 0 end
+      default pop me @ "^FAIL^Invalid Option!" ansi_notify 0 end
+    endcase
+  UNTIL
+  pop 0
+  me @ "^SUCC^Channel Announcements Editor Exited." ansi_notify
+; 
+ 
 ( menu for editing channel colors )
 : menu-channel-colors ( S-ShortName -- )
   BEGIN
-    "COLOR-EDIT" menu-header
+    "COLOR-EDIT: " getShortName strcat menu-header
     " ^INFO^1. ^WHITE^Network ID Color:      ^MOVE^"
     2 pick getNetColor "^^" "^" subst
     strcat
@@ -861,7 +979,7 @@ $def ALPHACHARS "abcdefghijklmnopqrstuvwxyz1234567890"
 ( menu for editing general channel permissions )
 : menu-channel-permissions ( S-ShortName -- )
   BEGIN
-    "CHANNEL-EDIT" menu-header
+    "PERMISSIONS: " getShortName strcat menu-header
     " ^INFO^1. ^WHITE^Guests can Talk:            ^MOVE^"
     2 pick getGuestTalk if
       "Yes"
@@ -894,9 +1012,10 @@ $def ALPHACHARS "abcdefghijklmnopqrstuvwxyz1234567890"
     6 pick getLevelTalk intostr strcat
     " ^INFO^6. ^WHITE^Required M-Level to Listen: ^MOVE^"
     7 pick getLevelListen intostr strcat
+    " ^INFO^7. ^WHITE^Edit Optee List"    
     " ^INFO^Q. ^WHITE^Quit Menu"
     " ^INFO^E. ^WHITE^Exit Menu System"
-    8 EDIT-ansi_display
+    9 EDIT-ansi_display
     read tolower
     case
       "q" strcmp not when
@@ -923,7 +1042,7 @@ $def ALPHACHARS "abcdefghijklmnopqrstuvwxyz1234567890"
 ( channel-editor: menu for editing general channel settings )
 : channel-editor ( S-ShortName -- )
   BEGIN
-    "CHANNEL-EDIT" menu-header
+    "CHANNEL-EDIT: " getShortName strcat menu-header
     " ^INFO^1. ^WHITE^Channel Short Name:    ^MOVE^"
     2 pick strcat
     " ^INFO^2. ^WHITE^Channel Full Name:     ^MOVE^"
@@ -934,9 +1053,9 @@ $def ALPHACHARS "abcdefghijklmnopqrstuvwxyz1234567890"
     5 pick getOptStatus strcat
     " ^INFO^5. ^WHITE^Channel Status:        ^MOVE^"
     6 pick getActive strcat
-    " ^INFO^6. ^WHITE^Edit Colors"
-    " ^INFO^7. ^WHITE^Edit Permissions"
-    " ^INFO^8. ^WHITE^Edit Optee List"
+    " ^INFO^6. ^WHITE^Edit Announcements"
+    " ^INFO^7. ^WHITE^Edit Colors"
+    " ^INFO^8. ^WHITE^Edit Permissions"
     " ^INFO^Q. ^WHITE^Quit Menu"
     " ^INFO^E. ^WHITE^Exit Menu System"
     10 EDIT-ansi_display
@@ -953,8 +1072,9 @@ $def ALPHACHARS "abcdefghijklmnopqrstuvwxyz1234567890"
         "3" strcmp not when dup alias-list-query 0 end
         "4" strcmp not when dup opt-query 0 end
         "5" strcmp not when dup status-toggle 0 end
-        "6" strcmp not when dup menu-channel-colors end
-        "7" strcmp not when dup menu-channel-permissions end
+        "6" strcmp not when dup menu-channel-announcements end
+        "7" strcmp not when dup menu-channel-colors end
+        "8" strcmp not when dup menu-channel-permissions end
       then
       default pop me @ "^FAIL^Invalid Option!" ansi_notify 0 end
     endcase
@@ -971,20 +1091,32 @@ $def ALPHACHARS "abcdefghijklmnopqrstuvwxyz1234567890"
       pop pop pop
     	me @ "^FAIL^You're already not a member of that channel." ansi_notify
    	else
+      getShortName getAnnounceUnjoin if
+	   	  ":leaves the " getShortName getFullName strcat
+  	 	  ". " getShortName getNetColor strcat SYSTEMMARKER strcat strcat
+   		  Talk
+   		else
+	      me @
+	      "^SUCC^You leave the ^MOVE^" getShortName getFullName strcat
+	      "^SUCC^." strcat
+	      ansi_notify
+   		then
    	  strcat setOptList
-      me @
-      "^SUCC^You leave the ^MOVE^" getShortName getFullName strcat
-      "^SUCC^." strcat
-      ansi_notify
     then
   else
     dup getOptList me @ intostr "#" swap strcat "#" strcat
     over over instr if
+      getShortName getAnnounceUnjoin if
+	   	  ":leaves the " getShortName getFullName strcat
+  	 	  ". " getShortName getNetColor strcat SYSTEMMARKER strcat strcat
+   		  Talk
+   		else
+	      me @
+	      "^SUCC^You leave the ^MOVE^" getShortName getFullName strcat
+	      "^SUCC^." strcat
+	      ansi_notify
+   		then
       "" swap subst setOptList
-      me @
-      "^SUCC^You leave the ^MOVE^" getShortName getFullName strcat
-      "^SUCC^." strcat
-      ansi_notify
     else
       pop pop pop
       me @ "^FAIL^You're already not a member of that channel." ansi_notify
@@ -1006,19 +1138,31 @@ $def ALPHACHARS "abcdefghijklmnopqrstuvwxyz1234567890"
     	me @ "^FAIL^You have already joined that channel." ansi_notify
    	else
    	  strcat setOptList
-      me @
-      "^SUCC^You join the ^MOVE^" getShortName getFullName strcat
-      "^SUCC^." strcat
-      ansi_notify
+      getShortName getAnnounceJoin if
+	   	  ":joins the " getShortName getFullName strcat
+  	 	  ". " getShortName getNetColor strcat SYSTEMMARKER strcat strcat
+   		  Talk
+   		else
+	      me @
+	      "^SUCC^You join the ^MOVE^" getShortName getFullName strcat
+	      "^SUCC^." strcat
+	      ansi_notify
+   		then
     then
   else
     dup getOptList me @ intostr "#" swap strcat "#" strcat
     over over instr if
       "" swap subst setOptList
-      me @
-      "^SUCC^You join the ^MOVE^" getShortName getFullName strcat
-      "^SUCC^." strcat
-      ansi_notify
+      getShortName getAnnounceJoin if
+	   	  ":joins the " getShortName getFullName strcat
+  	 	  ". (Chat System Announcement)" strcat
+   		  Talk
+   		else
+	      me @
+	      "^SUCC^You join the ^MOVE^" getShortName getFullName strcat
+	      "^SUCC^." strcat
+	      ansi_notify
+   		then
     else
       pop pop pop
       me @ "^FAIL^You have already joined that channel." ansi_notify
@@ -1094,9 +1238,64 @@ $def ALPHACHARS "abcdefghijklmnopqrstuvwxyz1234567890"
   printWhoTail
 ;
  
+: connectAnnouncement ( -- )
+	( We only announce if the person is actually connected and this is their )
+	( only connection.																											 )
+	me @ awake? 1 = not if
+		exit
+	then
+	DBITEM CHANNELDIR nextprop
+	BEGIN	dup STR-blank? not WHILE
+		dup dup "/" rinstr strcut swap pop ( S-propname S-shortname )
+		command ! ( Effectively making all getShortName's work )
+		getShortName getAnnounceConnect if ( This channel announces connects? )
+			me @ canListen? if		
+				":has connected and is listening to " getShortName getFullName strcat
+				". " strcat getShortName getNetColor strcat SYSTEMMARKER strcat
+				Talk
+			then
+		then
+		DBITEM swap nextprop
+	REPEAT
+;
+ 
+: disconnectAnnouncement ( -- )
+	( We only announce if the person is completely disconnected )
+	me @ awake? if
+		exit
+	then
+	DBITEM CHANNELDIR nextprop
+	BEGIN	dup STR-blank? not WHILE
+		dup dup "/" rinstr strcut swap pop ( S-propname S-shortname )
+		command ! ( Effectively making all getShortName's work )
+		getShortName getAnnounceDisconnect if ( This channel announces disconnect? )
+			me @ canListen? if		
+				":disconnected and therefore not listening to " getShortName getFullName
+				strcat ". " strcat getShortName getNetColor strcat SYSTEMMARKER strcat
+				Talk
+			then
+		then
+		DBITEM swap nextprop
+	REPEAT
+;
+ 
 : main
+  ( To make it difficult to fake chat system messages )
+  "" SYSTEMMARKER subst
   dup STR-blank? if
     pop print-help exit
+  then
+  dup "Connect" strcmp not if
+  	( This prevents someone from triggering an announcement by hand )
+  	trig #-1 dbcmp if 
+  		pop connectAnnouncement exit
+  	then
+  then
+  dup "Disconnect" strcmp not if
+  	( This prevents someone from triggering an announcement by hand )
+  	trig #-1 dbcmp if 
+  		pop disconnectAnnouncement exit
+  	then
   then
   dup STR-command dup "" strcmp not if
     pop
@@ -1167,3 +1366,4 @@ $def ALPHACHARS "abcdefghijklmnopqrstuvwxyz1234567890"
 c
 q
 @register cmd-glow-chat-system=cmd/glow-chat-system
+@set $cmd/glow-chat-system=L
