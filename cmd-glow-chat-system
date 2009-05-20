@@ -2,7 +2,7 @@ wh me=Beginning installation of cmd-glow-chat-system
 @prog cmd-glow-chat-system
 1 99999 d
 1 i
-( cmd-chat-system: $Date: 2009/05/20 16:03:58 $ $Revision: 1.22 $             )
+( cmd-chat-system: $Date: 2009/05/20 16:23:06 $ $Revision: 1.23 $             )
 ( Purpose: Provides a muckwide chat network                                   )
 ( Author: Feaelin Moilar                                                      )
 ( Contributors:                                                               )
@@ -10,6 +10,9 @@ wh me=Beginning installation of cmd-glow-chat-system
 ( --------------------------------------------------------------------------- )
 (
   $Log: cmd-glow-chat-system,v $
+  Revision 1.23  2009/05/20 16:23:06  feaelin
+  Needs to be W3 to support @aliases
+
   Revision 1.22  2009/05/20 16:03:58  feaelin
   Fixed issue with disconnect...it was missing a getShortName
  
@@ -346,7 +349,7 @@ $def SYSTEMMARKER "(Chat System Announcement)"
 	24 strcut pop
   "^WHITE^------------------------------------------------------------------------^RESET^"
   "^GREEN^  GLORIA: Glow Chat System                                ^FOREST^" 
-  "$Revision: 1.22 $" 1 strcut swap pop dup strlen 1 - strcut pop strcat
+  "$Revision: 1.23 $" 1 strcut swap pop dup strlen 1 - strcut pop strcat
   ": ^YELLOW^" ": " subst
   "^FOREST^  By Feaelin Moilar (Iain E. Davis)             ^YELLOW^"
   4 rotate dup strlen 24 swap - "                   " 
@@ -381,9 +384,9 @@ $def SYSTEMMARKER "(Chat System Announcement)"
     getShortName " /add             Adds a channel to the system." strcat
     getShortName " /edit            Edits the channel." strcat
     getShortName " /remove          Removes a channel from the system." strcat
-    10 EDIT-ansi_display
+    8 EDIT-ansi_display
   else
-    7 EDIT-ansi_display
+    5 EDIT-ansi_display
   then
 ;
  
@@ -1334,7 +1337,7 @@ $def SYSTEMMARKER "(Chat System Announcement)"
     	me @ getShortName isListening? not if
 				joinChannel
 			then
-      pop Talk ( output to appropiate channel )
+      pop striplead Talk ( output to appropiate channel )
     else
       me @ swap ansi_notify pop
     then
