@@ -2,7 +2,7 @@ wh me=Beginning installation of cmd-glow-chat-system
 @prog cmd-glow-chat-system
 1 99999 d
 1 i
-( cmd-chat-system: $Date: 2009/05/20 15:30:51 $ $Revision: 1.21 $             )
+( cmd-chat-system: $Date: 2009/05/20 16:03:58 $ $Revision: 1.22 $             )
 ( Purpose: Provides a muckwide chat network                                   )
 ( Author: Feaelin Moilar                                                      )
 ( Contributors:                                                               )
@@ -10,9 +10,12 @@ wh me=Beginning installation of cmd-glow-chat-system
 ( --------------------------------------------------------------------------- )
 (
   $Log: cmd-glow-chat-system,v $
+  Revision 1.22  2009/05/20 16:03:58  feaelin
+  Fixed issue with disconnect...it was missing a getShortName
+ 
   Revision 1.21  2009/05/20 15:30:51  feaelin
   Eh. greater than 1, not less than 2.
-
+ 
   Revision 1.20  2009/05/20 15:27:08  feaelin
   Removed enter/leave from help still exist as aliases of join/unjoin
   Changed announceDisconnect so that it only announces if number
@@ -343,7 +346,7 @@ $def SYSTEMMARKER "(Chat System Announcement)"
 	24 strcut pop
   "^WHITE^------------------------------------------------------------------------^RESET^"
   "^GREEN^  GLORIA: Glow Chat System                                ^FOREST^" 
-  "$Revision: 1.21 $" 1 strcut swap pop dup strlen 1 - strcut pop strcat
+  "$Revision: 1.22 $" 1 strcut swap pop dup strlen 1 - strcut pop strcat
   ": ^YELLOW^" ": " subst
   "^FOREST^  By Feaelin Moilar (Iain E. Davis)             ^YELLOW^"
   4 rotate dup strlen 24 swap - "                   " 
@@ -1408,3 +1411,4 @@ c
 q
 @register cmd-glow-chat-system=cmd/glow-chat-system
 @set $cmd/glow-chat-system=L
+@set $cmd/glow-chat-system=W3
