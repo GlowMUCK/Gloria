@@ -2,7 +2,7 @@ wh me=Beginning installation of cmd-glow-chat-system
 @prog cmd-glow-chat-system
 1 99999 d
 1 i
-( cmd-chat-system: $Date: 2009/05/20 15:27:08 $ $Revision: 1.20 $             )
+( cmd-chat-system: $Date: 2009/05/20 15:30:51 $ $Revision: 1.21 $             )
 ( Purpose: Provides a muckwide chat network                                   )
 ( Author: Feaelin Moilar                                                      )
 ( Contributors:                                                               )
@@ -10,6 +10,9 @@ wh me=Beginning installation of cmd-glow-chat-system
 ( --------------------------------------------------------------------------- )
 (
   $Log: cmd-glow-chat-system,v $
+  Revision 1.21  2009/05/20 15:30:51  feaelin
+  Eh. greater than 1, not less than 2.
+
   Revision 1.20  2009/05/20 15:27:08  feaelin
   Removed enter/leave from help still exist as aliases of join/unjoin
   Changed announceDisconnect so that it only announces if number
@@ -340,7 +343,7 @@ $def SYSTEMMARKER "(Chat System Announcement)"
 	24 strcut pop
   "^WHITE^------------------------------------------------------------------------^RESET^"
   "^GREEN^  GLORIA: Glow Chat System                                ^FOREST^" 
-  "$Revision: 1.20 $" 1 strcut swap pop dup strlen 1 - strcut pop strcat
+  "$Revision: 1.21 $" 1 strcut swap pop dup strlen 1 - strcut pop strcat
   ": ^YELLOW^" ": " subst
   "^FOREST^  By Feaelin Moilar (Iain E. Davis)             ^YELLOW^"
   4 rotate dup strlen 24 swap - "                   " 
@@ -488,6 +491,93 @@ $def SYSTEMMARKER "(Chat System Announcement)"
     0 =
   UNTIL
   5 popn
+;
+ 
+: joinChannel ( -- )
+	me @ canListen? not if
+		me @ "^FAIL^You have insufficient permissions to listen to that channel."
+		ansi_notify
+		exit
+	then 
+  getShortName dup getOptStatus
+  "I" strcmp not if
+    dup getOptList me @ intostr "#" swap strcat "#" strcat
+    over over instr if
+      pop pop pop
+    	me @ "^FAIL^You have already joined that channel." ansi_notify
+   	else
+   	  strcat setOptList
+      getShortName getAnnounceJoin if
+	   	  ":joins the " getShortName getFullName strcat
+  	 	  ". " getShortName getNetColor strcat SYSTEMMARKER strcat strcat
+   		  Talk
+   		else
+	      me @
+	      "^SUCC^You join the ^MOVE^" getShortName getFullName strcat
+	      "^SUCC^." strcat
+	      ansi_notify
+   		then
+    then
+  else
+    dup getOptList me @ intostr "#" swap strcat "#" strcat
+    over over instr if
+      "" swap subst setOptList
+      getShortName getAnnounceJoin if
+	   	  ":joins the " getShortName getFullName strcat
+  	 	  ". (Chat System Announcement)" strcat
+   		  Talk
+   		else
+	      me @
+	      "^SUCC^You join the ^MOVE^" getShortName getFullName strcat
+	      "^SUCC^." strcat
+	      ansi_notify
+   		then
+    else
+      pop pop pop
+      me @ "^FAIL^You have already joined that channel." ansi_notify
+    then  
+  then
+;
+ 
+: unJoinChannel ( -- )
+  getShortName dup getOptStatus
+  "O" strcmp not if
+    dup getOptList me @ intostr "#" swap strcat "#" strcat
+    over over instr if
+      pop pop pop
+    	me @ "^FAIL^You're already not a member of that channel." ansi_notify
+   	else
+      getShortName getAnnounceUnjoin if
+	   	  ":leaves the " getShortName getFullName strcat
+  	 	  ". " getShortName getNetColor strcat SYSTEMMARKER strcat strcat
+   		  Talk
+   		else
+	      me @
+	      "^SUCC^You leave the ^MOVE^" getShortName getFullName strcat
+	      "^SUCC^." strcat
+	      ansi_notify
+   		then
+   	  strcat setOptList
+    then
+  else
+    dup getOptList me @ intostr "#" swap strcat "#" strcat
+    over over instr if
+      getShortName getAnnounceUnjoin if
+	   	  ":leaves the " getShortName getFullName strcat
+  	 	  ". " getShortName getNetColor strcat SYSTEMMARKER strcat strcat
+   		  Talk
+   		else
+	      me @
+	      "^SUCC^You leave the ^MOVE^" getShortName getFullName strcat
+	      "^SUCC^." strcat
+	      ansi_notify
+   		then
+      "" swap subst setOptList
+    else
+      pop pop pop
+      me @ "^FAIL^You're already not a member of that channel." ansi_notify
+    then  
+  then
 ;
  
 ( Either returns "" if okay, or an errormessage if not )
@@ -1105,93 +1195,6 @@ $def SYSTEMMARKER "(Chat System Announcement)"
   me @ "^SUCC^Channel Editor Exited." ansi_notify
 ; 
  
-: unJoinChannel ( -- )
-  getShortName dup getOptStatus
-  "O" strcmp not if
-    dup getOptList me @ intostr "#" swap strcat "#" strcat
-    over over instr if
-      pop pop pop
-    	me @ "^FAIL^You're already not a member of that channel." ansi_notify
-   	else
-      getShortName getAnnounceUnjoin if
-	   	  ":leaves the " getShortName getFullName strcat
-  	 	  ". " getShortName getNetColor strcat SYSTEMMARKER strcat strcat
-   		  Talk
-   		else
-	      me @
-	      "^SUCC^You leave the ^MOVE^" getShortName getFullName strcat
-	      "^SUCC^." strcat
-	      ansi_notify
-   		then
-   	  strcat setOptList
-    then
-  else
-    dup getOptList me @ intostr "#" swap strcat "#" strcat
-    over over instr if
-      getShortName getAnnounceUnjoin if
-	   	  ":leaves the " getShortName getFullName strcat
-  	 	  ". " getShortName getNetColor strcat SYSTEMMARKER strcat strcat
-   		  Talk
-   		else
-	      me @
-	      "^SUCC^You leave the ^MOVE^" getShortName getFullName strcat
-	      "^SUCC^." strcat
-	      ansi_notify
-   		then
-      "" swap subst setOptList
-    else
-      pop pop pop
-      me @ "^FAIL^You're already not a member of that channel." ansi_notify
-    then  
-  then
-;
- 
-: joinChannel ( -- )
-	me @ canListen? not if
-		me @ "^FAIL^You have insufficient permissions to listen to that channel."
-		ansi_notify
-		exit
-	then 
-  getShortName dup getOptStatus
-  "I" strcmp not if
-    dup getOptList me @ intostr "#" swap strcat "#" strcat
-    over over instr if
-      pop pop pop
-    	me @ "^FAIL^You have already joined that channel." ansi_notify
-   	else
-   	  strcat setOptList
-      getShortName getAnnounceJoin if
-	   	  ":joins the " getShortName getFullName strcat
-  	 	  ". " getShortName getNetColor strcat SYSTEMMARKER strcat strcat
-   		  Talk
-   		else
-	      me @
-	      "^SUCC^You join the ^MOVE^" getShortName getFullName strcat
-	      "^SUCC^." strcat
-	      ansi_notify
-   		then
-    then
-  else
-    dup getOptList me @ intostr "#" swap strcat "#" strcat
-    over over instr if
-      "" swap subst setOptList
-      getShortName getAnnounceJoin if
-	   	  ":joins the " getShortName getFullName strcat
-  	 	  ". (Chat System Announcement)" strcat
-   		  Talk
-   		else
-	      me @
-	      "^SUCC^You join the ^MOVE^" getShortName getFullName strcat
-	      "^SUCC^." strcat
-	      ansi_notify
-   		then
-    else
-      pop pop pop
-      me @ "^FAIL^You have already joined that channel." ansi_notify
-    then  
-  then
-;
- 
 : printWhoHeader ( -- )
 	getShortName menu-header
   me @ "^WHITE^| ^FOREST^Player Name^WHITE^       | ^FOREST^Talk? ^WHITE^|" ansi_notify
@@ -1283,7 +1286,7 @@ $def SYSTEMMARKER "(Chat System Announcement)"
  
 : disconnectAnnouncement ( -- )
 	( We only announce if the person is completely disconnected )
-	me @ awake? 1 > if
+	me @ awake? if
 		exit
 	then
 	DBITEM CHANNELDIR nextprop
@@ -1291,9 +1294,12 @@ $def SYSTEMMARKER "(Chat System Announcement)"
 		dup dup "/" rinstr strcut swap pop ( S-propname S-shortname )
 		command ! ( Effectively making all getShortName's work )
 		getShortName getAnnounceDisconnect if ( This channel announces disconnect? )
-			me @ isListening? if		
-				":disconnected and therefore not listening to " getShortName getFullName
-				strcat ". " strcat getShortName getNetColor strcat SYSTEMMARKER strcat
+			me @ getShortName isListening? if
+				":disconnected and therefore is not listening to "
+				getShortName getFullName strcat
+				". " strcat
+				getShortName getNetColor strcat
+				SYSTEMMARKER strcat
 				Talk
 			then
 		then
@@ -1322,6 +1328,9 @@ $def SYSTEMMARKER "(Chat System Announcement)"
   dup STR-command dup "" strcmp not if
     pop
     me @ canTalk? dup STR-blank? if
+    	me @ getShortName isListening? not if
+				joinChannel
+			then
       pop Talk ( output to appropiate channel )
     else
       me @ swap ansi_notify pop
