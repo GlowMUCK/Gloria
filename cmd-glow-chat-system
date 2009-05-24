@@ -2,7 +2,7 @@ wh me=Beginning installation of cmd-glow-chat-system
 @prog cmd-glow-chat-system
 1 99999 d
 1 i
-( cmd-chat-system: $Date: 2009/05/20 16:23:06 $ $Revision: 1.23 $             )
+( cmd-chat-system: $Date: 2009/05/20 17:20:54 $ $Revision: 1.24 $             )
 ( Purpose: Provides a muckwide chat network                                   )
 ( Author: Feaelin Moilar                                                      )
 ( Contributors:                                                               )
@@ -10,6 +10,10 @@ wh me=Beginning installation of cmd-glow-chat-system
 ( --------------------------------------------------------------------------- )
 (
   $Log: cmd-glow-chat-system,v $
+  Revision 1.24  2009/05/20 17:20:54  feaelin
+  Fixed print-help output problem.
+  Adjusted so that the code strips leading spaces.
+
   Revision 1.23  2009/05/20 16:23:06  feaelin
   Needs to be W3 to support @aliases
 
@@ -99,7 +103,7 @@ $include $lib/mv-cp
 $def CHANNELDIR "/Channels/"
 $def ALIASDIR   "/Aliases/"
 $def ALPHACHARS "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"
-$def SYSTEMMARKER "(Chat System Announcement)"
+$def SYSTEMMARKER "(System Announcement)"
  
 : DBITEM
 	trig dup #-1 dbcmp if
@@ -349,7 +353,7 @@ $def SYSTEMMARKER "(Chat System Announcement)"
 	24 strcut pop
   "^WHITE^------------------------------------------------------------------------^RESET^"
   "^GREEN^  GLORIA: Glow Chat System                                ^FOREST^" 
-  "$Revision: 1.23 $" 1 strcut swap pop dup strlen 1 - strcut pop strcat
+  "$Revision: 1.24 $" 1 strcut swap pop dup strlen 1 - strcut pop strcat
   ": ^YELLOW^" ": " subst
   "^FOREST^  By Feaelin Moilar (Iain E. Davis)             ^YELLOW^"
   4 rotate dup strlen 24 swap - "                   " 
@@ -949,13 +953,16 @@ $def SYSTEMMARKER "(Chat System Announcement)"
   "TALK-LEVEL: " getShortName strcat menu-header
   me @ isExpert? not if
     me @ 
-    "^NOTE^An m-level is the mucker or wizard level of the character. Levels 1,2,3"
+    "^NOTE^An m-level is the mucker or wizard level of the character. Levels"
     ansi_notify
     me @
-    "^NOTE^correspond to M1,M2,M3 bits; Levels 4,5,6,7 correspond to the W1,W2,W3,W4 bits,"
+    "^NOTE^1, 2, 3 correspond to M1,M2,M3 bits; Levels 4, 5, 6, 7 correspond to"
     ansi_notify
     me @
-    "^NOTE^0 is none, and 8 is #1 (the Man). 9+ would block all wizards and mortals."
+    "^NOTE^the W1,W2,W3,W4 bits, 0 is none, and 8 is #1 (the Man). 9+ would"
+    ansi_notify
+    me @
+    "^NOTE^block all wizards and mortals."
     ansi_notify
   then
   dup getLevelTalk intostr
@@ -978,15 +985,18 @@ $def SYSTEMMARKER "(Chat System Announcement)"
   "LISTEN-LEVEL: " getShortName strcat menu-header
   me @ isExpert? not if
     me @ 
-    "^NOTE^An m-level is the mucker or wizard level of the character. Levels 1,2,3"
+    "^NOTE^An m-level is the mucker or wizard level of the character. Levels"
     ansi_notify
     me @
-    "^NOTE^correspond to M1,M2,M3 bits; Levels 4,5,6,7 correspond to the W1,W2,W3,W4 bits,"
+    "^NOTE^1, 2, 3 correspond to M1,M2,M3 bits; Levels 4, 5, 6, 7 correspond to"
     ansi_notify
     me @
-    "^NOTE^0 is none, and 8 is #1 (the Man). 9+ would block all wizards and mortals."
+    "^NOTE^the W1,W2,W3,W4 bits, 0 is none, and 8 is #1 (the Man). 9+ would"
     ansi_notify
-  then
+    me @
+    "^NOTE^block all wizards and mortals."
+    ansi_notify
+	then
   dup getLevelListen intostr
   me @ "^NOTE^Current Listen Level: ^MOVE^" rot strcat ansi_notify
   me @ "^INFO^Enter the new Listen Level:" ansi_notify
@@ -1281,7 +1291,7 @@ $def SYSTEMMARKER "(Chat System Announcement)"
 		command ! ( Effectively making all getShortName's work )
 		getShortName getAnnounceConnect if ( This channel announces connects? )
 			me @ getShortName isListening? if		
-				":has connected and is listening to " getShortName getFullName strcat
+				":connects and starts listening to " getShortName getFullName strcat
 				". " strcat getShortName getNetColor strcat SYSTEMMARKER strcat
 				Talk
 			then
@@ -1301,7 +1311,7 @@ $def SYSTEMMARKER "(Chat System Announcement)"
 		command ! ( Effectively making all getShortName's work )
 		getShortName getAnnounceDisconnect if ( This channel announces disconnect? )
 			me @ getShortName isListening? if
-				":disconnected and therefore is not listening to "
+				":disconnects and stops listening to "
 				getShortName getFullName strcat
 				". " strcat
 				getShortName getNetColor strcat
