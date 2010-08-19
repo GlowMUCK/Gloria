@@ -2,7 +2,7 @@ wh me=Beginning installation of cmd-glow-chat-system
 @prog cmd-glow-chat-system
 1 99999 d
 1 i
-( cmd-chat-system: $Date: 2009/09/29 18:32:29 $ $Revision: 1.26 $             )
+( cmd-chat-system: $Date: 2010/08/19 12:06:17 $ $Revision: 1.27 $             )
 ( Purpose: Provides a muckwide chat network                                   )
 ( Author: Feaelin Moilar                                                      )
 ( Contributors:                                                               )
@@ -10,9 +10,12 @@ wh me=Beginning installation of cmd-glow-chat-system
 ( --------------------------------------------------------------------------- )
 (
   $Log: cmd-glow-chat-system,v $
+  Revision 1.27  2010/08/19 12:06:17  Feaelin
+  Cleaned up the column sizes for /who.
+ 
   Revision 1.26  2009/09/29 18:32:29  feaelin
   Added a strip so that . /help worked correctly.
-
+ 
   Revision 1.25  2009/05/24 16:18:04  feaelin
   Cleaned up some of the help displays
  
@@ -112,9 +115,9 @@ $def ALPHACHARS "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"
 $def SYSTEMMARKER "(System Announcement)"
  
 : DBITEM
-	trig dup #-1 dbcmp if
-		pop "$muf/chatobject" match
-	then
+  trig dup #-1 dbcmp if
+    pop "$muf/chatobject" match
+  then
 ;
  
 : getNetSeparator ( -- S-Separator )
@@ -349,17 +352,17 @@ $def SYSTEMMARKER "(System Announcement)"
  
 : isListening? ( D-player S-ShortName -- )
   dup getOptStatus "I" strcmp not if
-  	getOptList swap intostr "#" swap strcat "#" strcat instr
+    getOptList swap intostr "#" swap strcat "#" strcat instr
   else
-  	getOptList swap intostr "#" swap strcat "#" strcat instr not
+    getOptList swap intostr "#" swap strcat "#" strcat instr not
   then
 ;
  
 : menu-header ( S-MenuName -- )
-	24 strcut pop
+  24 strcut pop
   "^WHITE^------------------------------------------------------------------------^RESET^"
   "^GREEN^  GLORIA: Glow Chat System                                ^FOREST^" 
-  "$Revision: 1.26 $" 1 strcut swap pop dup strlen 1 - strcut pop strcat
+  "$Revision: 1.27 $" 1 strcut swap pop dup strlen 1 - strcut pop strcat
   ": ^YELLOW^" ": " subst
   "^FOREST^  By Feaelin Moilar (Iain E. Davis)             ^YELLOW^"
   4 rotate dup strlen 24 swap - "                   " 
@@ -381,7 +384,7 @@ $def SYSTEMMARKER "(System Announcement)"
  
 : print-help ( -- )
   getShortName STR-blank? if
-  	print-short-help exit
+    print-short-help exit
   then
   "HELP" menu-header
   getShortName   " <message>        'says' <message> on the channel." strcat
@@ -401,45 +404,45 @@ $def SYSTEMMARKER "(System Announcement)"
 ;
  
 : buildMessage ( B-NormalMessage? S-BaseMessage -- S-Message )
-	dup 1 strcut pop
-	":;" swap	instr if ( If emote? )
-		1 strcut swap pop
-		dup 1 strcut pop
-		ALPHACHARS swap instr if ( If alphanumeric )
-			" " swap strcat
-		then ( If Alphanumeric )
-		swap if ( name prepend )
-			me @ name swap strcat
-		then ( name prepend )
-		"^MESSAGECOLOR^" swap strcat
-	else ( If emote?..in this case, it isn't )
-		swap pop
-		"^MESSAGECOLOR^" me @ name strcat " says, \"^SAYMESSAGECOLOR^"
-		strcat swap strcat
-		"^MESSAGECOLOR^\"" strcat
-	then
+  dup 1 strcut pop
+  ":;" swap  instr if ( If emote? )
+    1 strcut swap pop
+    dup 1 strcut pop
+    ALPHACHARS swap instr if ( If alphanumeric )
+      " " swap strcat
+    then ( If Alphanumeric )
+    swap if ( name prepend )
+      me @ name swap strcat
+    then ( name prepend )
+    "^MESSAGECOLOR^" swap strcat
+  else ( If emote?..in this case, it isn't )
+    swap pop
+    "^MESSAGECOLOR^" me @ name strcat " says, \"^SAYMESSAGECOLOR^"
+    strcat swap strcat
+    "^MESSAGECOLOR^\"" strcat
+  then
 ;
  
 : logMessage ( S-Message -- )
-	( Substitute the netseparator with the netseparator plus the
-	( player's dbref )
-	getNetSeparator getNetSeparator
-	" (^YELLOW^#" me @ intostr strcat "^MESSAGECOLOR^) " strcat strcat subst
-	( Fill in the message colors )
-	getShortName getMessageColor "^MESSAGECOLOR^" subst
-	getShortName getSayMessageColor "^SAYMESSAGECOLOR^" subst
-	( Store it to the log. )
-	CHANNELDIR getShortName strcat "/Log" strcat
-	dup DBITEM LMGR-getcount
-	1 + swap DBITEM LMGR-PutElem
+  ( Substitute the netseparator with the netseparator plus the
+  ( player's dbref )
+  getNetSeparator getNetSeparator
+  " (^YELLOW^#" me @ intostr strcat "^MESSAGECOLOR^) " strcat strcat subst
+  ( Fill in the message colors )
+  getShortName getMessageColor "^MESSAGECOLOR^" subst
+  getShortName getSayMessageColor "^SAYMESSAGECOLOR^" subst
+  ( Store it to the log. )
+  CHANNELDIR getShortName strcat "/Log" strcat
+  dup DBITEM LMGR-getcount
+  1 + swap DBITEM LMGR-PutElem
 ;
  
 : NotifyPlayer ( D-player S-message -- )
-	getShortName getNetColor getShortName strcat getNetSeparator strcat
-	" " strcat swap strcat
-	getShortName getMessageColor "^MESSAGECOLOR^" subst
-	getShortName getSayMessageColor "^SAYMESSAGECOLOR^" subst
-	ansi_notify
+  getShortName getNetColor getShortName strcat getNetSeparator strcat
+  " " strcat swap strcat
+  getShortName getMessageColor "^MESSAGECOLOR^" subst
+  getShortName getSayMessageColor "^SAYMESSAGECOLOR^" subst
+  ansi_notify
 ;
  
 : canListen? ( D-player  -- bool )
@@ -477,7 +480,7 @@ $def SYSTEMMARKER "(System Announcement)"
     dup "#" 7 pick intostr strcat "#" strcat
     ( connected-RNG S-message S-Channel S-sent S-sent S-current )
     instr not if
-	    ( connected-RNG S-message S-Channel S-sent )
+      ( connected-RNG S-message S-Channel S-sent )
       "#" strcat 5 pick intostr strcat "#" strcat
       ( connected-RNG S-message S-Channel S-sent )
       5 pick canListen? if
@@ -510,44 +513,44 @@ $def SYSTEMMARKER "(System Announcement)"
 ;
  
 : joinChannel ( -- )
-	me @ canListen? not if
-		me @ "^FAIL^You have insufficient permissions to listen to that channel."
-		ansi_notify
-		exit
-	then 
+  me @ canListen? not if
+    me @ "^FAIL^You have insufficient permissions to listen to that channel."
+    ansi_notify
+    exit
+  then 
   getShortName dup getOptStatus
   "I" strcmp not if
     dup getOptList me @ intostr "#" swap strcat "#" strcat
     over over instr if
       pop pop pop
-    	me @ "^FAIL^You have already joined that channel." ansi_notify
-   	else
-   	  strcat setOptList
+      me @ "^FAIL^You have already joined that channel." ansi_notify
+     else
+       strcat setOptList
       getShortName getAnnounceJoin if
-	   	  ":joins the " getShortName getFullName strcat
-  	 	  ". " getShortName getNetColor strcat SYSTEMMARKER strcat strcat
-   		  Talk
-   		else
-	      me @
-	      "^SUCC^You join the ^MOVE^" getShortName getFullName strcat
-	      "^SUCC^." strcat
-	      ansi_notify
-   		then
+         ":joins the " getShortName getFullName strcat
+         ". " getShortName getNetColor strcat SYSTEMMARKER strcat strcat
+         Talk
+       else
+        me @
+        "^SUCC^You join the ^MOVE^" getShortName getFullName strcat
+        "^SUCC^." strcat
+        ansi_notify
+       then
     then
   else
     dup getOptList me @ intostr "#" swap strcat "#" strcat
     over over instr if
       "" swap subst setOptList
       getShortName getAnnounceJoin if
-	   	  ":joins the " getShortName getFullName strcat
-  	 	  ". (Chat System Announcement)" strcat
-   		  Talk
-   		else
-	      me @
-	      "^SUCC^You join the ^MOVE^" getShortName getFullName strcat
-	      "^SUCC^." strcat
-	      ansi_notify
-   		then
+         ":joins the " getShortName getFullName strcat
+         ". (Chat System Announcement)" strcat
+         Talk
+       else
+        me @
+        "^SUCC^You join the ^MOVE^" getShortName getFullName strcat
+        "^SUCC^." strcat
+        ansi_notify
+       then
     else
       pop pop pop
       me @ "^FAIL^You have already joined that channel." ansi_notify
@@ -561,33 +564,33 @@ $def SYSTEMMARKER "(System Announcement)"
     dup getOptList me @ intostr "#" swap strcat "#" strcat
     over over instr if
       pop pop pop
-    	me @ "^FAIL^You're already not a member of that channel." ansi_notify
-   	else
+      me @ "^FAIL^You're already not a member of that channel." ansi_notify
+     else
       getShortName getAnnounceUnjoin if
-	   	  ":leaves the " getShortName getFullName strcat
-  	 	  ". " getShortName getNetColor strcat SYSTEMMARKER strcat strcat
-   		  Talk
-   		else
-	      me @
-	      "^SUCC^You leave the ^MOVE^" getShortName getFullName strcat
-	      "^SUCC^." strcat
-	      ansi_notify
-   		then
-   	  strcat setOptList
+         ":leaves the " getShortName getFullName strcat
+         ". " getShortName getNetColor strcat SYSTEMMARKER strcat strcat
+         Talk
+       else
+        me @
+        "^SUCC^You leave the ^MOVE^" getShortName getFullName strcat
+        "^SUCC^." strcat
+        ansi_notify
+       then
+       strcat setOptList
     then
   else
     dup getOptList me @ intostr "#" swap strcat "#" strcat
     over over instr if
       getShortName getAnnounceUnjoin if
-	   	  ":leaves the " getShortName getFullName strcat
-  	 	  ". " getShortName getNetColor strcat SYSTEMMARKER strcat strcat
-   		  Talk
-   		else
-	      me @
-	      "^SUCC^You leave the ^MOVE^" getShortName getFullName strcat
-	      "^SUCC^." strcat
-	      ansi_notify
-   		then
+         ":leaves the " getShortName getFullName strcat
+         ". " getShortName getNetColor strcat SYSTEMMARKER strcat strcat
+         Talk
+       else
+        me @
+        "^SUCC^You leave the ^MOVE^" getShortName getFullName strcat
+        "^SUCC^." strcat
+        ansi_notify
+       then
       "" swap subst setOptList
     else
       pop pop pop
@@ -598,11 +601,11 @@ $def SYSTEMMARKER "(System Announcement)"
  
 ( Either returns "" if okay, or an errormessage if not )
 : canTalk? ( D-Player -- S-ErrorMessage )
-	dup canListen? not if
-	  pop
-	  "^FAIL^Insufficient permissions to listen, therefore cannot talk."
-	  exit
-	then
+  dup canListen? not if
+    pop
+    "^FAIL^Insufficient permissions to listen, therefore cannot talk."
+    exit
+  then
   getShortName
   dup STR-blank? if
     pop pop
@@ -1002,7 +1005,7 @@ $def SYSTEMMARKER "(System Announcement)"
     me @
     "^NOTE^block all wizards and mortals."
     ansi_notify
-	then
+  then
   dup getLevelListen intostr
   me @ "^NOTE^Current Listen Level: ^MOVE^" rot strcat ansi_notify
   me @ "^INFO^Enter the new Listen Level:" ansi_notify
@@ -1045,7 +1048,7 @@ $def SYSTEMMARKER "(System Announcement)"
     strcat
     " ^INFO^4. ^WHITE^Announce on disconnect?:    ^MOVE^"
     5 pick getAnnounceDisconnect if
-    	"Yes"
+      "Yes"
     else
       "No"
     then
@@ -1218,7 +1221,7 @@ $def SYSTEMMARKER "(System Announcement)"
 ; 
  
 : printWhoHeader ( -- )
-	getShortName menu-header
+  getShortName menu-header
   me @ "^WHITE^| ^FOREST^Player Name^WHITE^                                                  | ^FOREST^Talk? ^WHITE^|" ansi_notify
   me @ "^WHITE^|--------------------------------------------------------------+-------|" ansi_notify
 ;
@@ -1227,7 +1230,7 @@ $def SYSTEMMARKER "(System Announcement)"
   "^WHITE^| ^INFO^" over name dup " " 59 STR-fillfield
    "  ^WHITE^| " strcat strcat strcat
   swap canTalk? STR-blank? if
-  	" ^INFO^Yes  ^WHITE^|" 
+    " ^INFO^Yes  ^WHITE^|" 
   else
     " ^INFO^No   ^WHITE^|"
   then
@@ -1239,6 +1242,39 @@ $def SYSTEMMARKER "(System Announcement)"
   me @ "^WHITE^------------------------------------------------------------------------" ansi_notify
 ;
  
+: whoChannelHelper ( s -- )
+  ( S-ShortName )
+  dup getOptStatus "I" strcmp not if
+    ( The channel is an opt-in channel, so the refs are those listening )
+    dup getOptList "##" explode
+    BEGIN
+      swap dup STR-blank? if
+        pop
+      else
+        "" "#" subst
+        atoi dbref dup awake? if
+          printWhoLine
+        else
+          pop
+        then
+      then
+      1 - dup 0 =
+    UNTIL
+    pop pop
+  else
+    ( The channel is an opt-out channel, so the refs are those not listening )
+    online
+    BEGIN
+      swap dup intostr "#" swap strcat "#" strcat 3 pick 3 + pick
+      swap instr not if
+        printWhoLine
+      then
+      1 - dup 0 =
+    UNTIL
+    pop pop
+  then
+;
+ 
 : whoChannel ( s -- )
   dup STR-blank? if
     pop getShortName dup STR-blank? if
@@ -1246,87 +1282,58 @@ $def SYSTEMMARKER "(System Announcement)"
       exit
     then
   else
-  	dup getFullName STR-blank? if
-  	  me @ "^FAIL^Which channel?" ansi_notify
-  	  exit
-  	then
+    dup getFullName STR-blank? if
+      me @ "^FAIL^Which channel?" ansi_notify
+      exit
+    then
   then
   printWhoHeader
-  ( S-ShortName )
-  dup getOptStatus "I" strcmp not if
-  	( The channel is an opt-in channel, so the refs are those listening )
-  	dup getOptList "##" explode
-  	BEGIN
-  		swap dup STR-blank? if
-  			pop
-  		else
-  		  "" "#" subst
-  		  atoi dbref dup awake? if
-  		    printWhoLine
-  		  else
-  		    pop
-  		  then
-  		then
-  		1 - dup 0 =
-  	UNTIL
-  	pop pop
-  else
-  	( The channel is an opt-out channel, so the refs are those not listening )
-  	online
-  	BEGIN
-  	  swap dup intostr "#" swap strcat "#" strcat 3 pick 3 + pick
-  	  swap instr not if
-  	    printWhoLine
-  	  then
-  	  1 - dup 0 =
-  	UNTIL
-  	pop pop
-  then
+  whoChannelHelper
   printWhoTail
 ;
  
 : connectAnnouncement ( -- )
-	( We only announce if the person is actually connected and this is their )
-	( only connection.																											 )
-	me @ awake? 1 = not if
-		exit
-	then
-	DBITEM CHANNELDIR nextprop
-	BEGIN	dup STR-blank? not WHILE
-		dup dup "/" rinstr strcut swap pop ( S-propname S-shortname )
-		command ! ( Effectively making all getShortName's work )
-		getShortName getAnnounceConnect if ( This channel announces connects? )
-			me @ getShortName isListening? if		
-				":connects and starts listening to " getShortName getFullName strcat
-				". " strcat getShortName getNetColor strcat SYSTEMMARKER strcat
-				Talk
-			then
-		then
-		DBITEM swap nextprop
-	REPEAT
+  ( We only announce if the person is actually connected and this is their )
+  ( only connection.                                                       )
+  me @ awake? 1 = not if
+    exit
+  then
+  DBITEM CHANNELDIR nextprop
+  BEGIN  dup STR-blank? not WHILE
+    dup dup "/" rinstr strcut swap pop ( S-propname S-shortname )
+    command ! ( Effectively making all getShortName's work )
+    getShortName getAnnounceConnect if ( This channel announces connects? )
+      me @ getShortName isListening? if    
+        ":connects and starts listening to " getShortName getFullName strcat
+        ". " strcat getShortName getNetColor strcat SYSTEMMARKER strcat
+        Talk
+      then
+    then
+    DBITEM swap nextprop
+  REPEAT
 ;
  
 : disconnectAnnouncement ( -- )
-	( We only announce if the person is completely disconnected )
-	me @ awake? if
-		exit
-	then
-	DBITEM CHANNELDIR nextprop
-	BEGIN	dup STR-blank? not WHILE
-		dup dup "/" rinstr strcut swap pop ( S-propname S-shortname )
-		command ! ( Effectively making all getShortName's work )
-		getShortName getAnnounceDisconnect if ( This channel announces disconnect? )
-			me @ getShortName isListening? if
-				":disconnects and stops listening to "
-				getShortName getFullName strcat
-				". " strcat
-				getShortName getNetColor strcat
-				SYSTEMMARKER strcat
-				Talk
-			then
-		then
-		DBITEM swap nextprop
-	REPEAT
+  ( We only announce if the person is completely disconnected )
+  me @ awake? if
+    exit
+  then
+  DBITEM CHANNELDIR nextprop
+  BEGIN  dup STR-blank? not WHILE
+    dup dup "/" rinstr strcut swap pop ( S-propname S-shortname )
+    command ! ( Effectively making all getShortName's work )
+    getShortName getAnnounceDisconnect if ( This channel announces disconnect? )
+      me @ getShortName isListening? if
+        ":disconnects and stops listening to "
+        getShortName getFullName strcat
+        ". " strcat
+        getShortName getNetColor strcat
+        SYSTEMMARKER strcat
+        Talk
+      then
+    then
+    DBITEM swap nextprop
+  REPEAT
 ;
  
 : main
@@ -1337,23 +1344,23 @@ $def SYSTEMMARKER "(System Announcement)"
     pop print-help exit
   then
   dup "Connect" strcmp not if
-  	( This prevents someone from triggering an announcement by hand )
-  	trig #-1 dbcmp if 
-  		pop connectAnnouncement exit
-  	then
+    ( This prevents someone from triggering an announcement by hand )
+    trig #-1 dbcmp if 
+      pop connectAnnouncement exit
+    then
   then
   dup "Disconnect" strcmp not if
-  	( This prevents someone from triggering an announcement by hand )
-  	trig #-1 dbcmp if 
-  		pop disconnectAnnouncement exit
-  	then
+    ( This prevents someone from triggering an announcement by hand )
+    trig #-1 dbcmp if 
+      pop disconnectAnnouncement exit
+    then
   then
   dup STR-command dup "" strcmp not if
     pop
     me @ canTalk? dup STR-blank? if
-    	me @ getShortName isListening? not if
-				joinChannel
-			then
+      me @ getShortName isListening? not if
+        joinChannel
+      then
       pop striplead Talk ( output to appropiate channel )
     else
       me @ swap ansi_notify pop
@@ -1420,7 +1427,7 @@ $def SYSTEMMARKER "(System Announcement)"
   then
   dup "who" strcmp not if
     pop
-    whoChannel
+	whoChannel
     exit
   then
   pop
