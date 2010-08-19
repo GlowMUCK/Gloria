@@ -2,7 +2,7 @@ wh me=Beginning installation of cmd-glow-chat-system
 @prog cmd-glow-chat-system
 1 99999 d
 1 i
-( cmd-chat-system: $Date: 2010/08/19 12:06:17 $ $Revision: 1.27 $             )
+( cmd-chat-system: $Date: 2010/08/19 12:16:36 $ $Revision: 1.28 $             )
 ( Purpose: Provides a muckwide chat network                                   )
 ( Author: Feaelin Moilar                                                      )
 ( Contributors:                                                               )
@@ -10,6 +10,10 @@ wh me=Beginning installation of cmd-glow-chat-system
 ( --------------------------------------------------------------------------- )
 (
   $Log: cmd-glow-chat-system,v $
+  Revision 1.28  2010/08/19 12:16:36  Feaelin
+  Refactored /who so that I can use the internal code for the version of /who
+  that reports on all channels.
+
   Revision 1.27  2010/08/19 12:06:17  Feaelin
   Cleaned up the column sizes for /who.
  
@@ -362,7 +366,7 @@ $def SYSTEMMARKER "(System Announcement)"
   24 strcut pop
   "^WHITE^------------------------------------------------------------------------^RESET^"
   "^GREEN^  GLORIA: Glow Chat System                                ^FOREST^" 
-  "$Revision: 1.27 $" 1 strcut swap pop dup strlen 1 - strcut pop strcat
+  "$Revision: 1.28 $" 1 strcut swap pop dup strlen 1 - strcut pop strcat
   ": ^YELLOW^" ": " subst
   "^FOREST^  By Feaelin Moilar (Iain E. Davis)             ^YELLOW^"
   4 rotate dup strlen 24 swap - "                   " 
@@ -1242,7 +1246,7 @@ $def SYSTEMMARKER "(System Announcement)"
   me @ "^WHITE^------------------------------------------------------------------------" ansi_notify
 ;
  
-: whoChannelHelper ( s -- )
+: whoChannelHelper ( address s -- )
   ( S-ShortName )
   dup getOptStatus "I" strcmp not if
     ( The channel is an opt-in channel, so the refs are those listening )
@@ -1253,25 +1257,29 @@ $def SYSTEMMARKER "(System Announcement)"
       else
         "" "#" subst
         atoi dbref dup awake? if
-          printWhoLine
+		  ( Here's the black magic. We have the address for the line print )
+          ( below the list of dbrefs. Perform a 'pick' and execute the     )
+          ( address.                                                       )
+          over 3 + pick execute
         else
           pop
         then
       then
       1 - dup 0 =
     UNTIL
-    pop pop
+    pop pop pop
   else
     ( The channel is an opt-out channel, so the refs are those not listening )
     online
     BEGIN
       swap dup intostr "#" swap strcat "#" strcat 3 pick 3 + pick
       swap instr not if
-        printWhoLine
+        ( Address fetch and execute. See above                               )
+        over 3 + pick execute
       then
       1 - dup 0 =
     UNTIL
-    pop pop
+    pop pop pop
   then
 ;
  
@@ -1288,7 +1296,7 @@ $def SYSTEMMARKER "(System Announcement)"
     then
   then
   printWhoHeader
-  whoChannelHelper
+  'printWhoLine swap whoChannelHelper
   printWhoTail
 ;
  
