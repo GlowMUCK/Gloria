@@ -2,7 +2,7 @@ wh me=Beginning installation of cmd-glow-chat-system
 @prog cmd-glow-chat-system
 1 99999 d
 1 i
-( cmd-chat-system: $Date: 2010/08/19 12:16:36 $ $Revision: 1.28 $             )
+( cmd-chat-system: $Date: 2010/08/19 12:31:08 $ $Revision: 1.29 $             )
 ( Purpose: Provides a muckwide chat network                                   )
 ( Author: Feaelin Moilar                                                      )
 ( Contributors:                                                               )
@@ -10,10 +10,16 @@ wh me=Beginning installation of cmd-glow-chat-system
 ( --------------------------------------------------------------------------- )
 (
   $Log: cmd-glow-chat-system,v $
+  Revision 1.29  2010/08/19 12:31:08  Feaelin
+  Refactored whoChannelHelper so that it accepts an address of the
+  printWhoLine word/function to be used. In later iterations, this will allow
+  for different printWhoLine functions to be used depending on what output we
+  want.
+ 
   Revision 1.28  2010/08/19 12:16:36  Feaelin
   Refactored /who so that I can use the internal code for the version of /who
   that reports on all channels.
-
+ 
   Revision 1.27  2010/08/19 12:06:17  Feaelin
   Cleaned up the column sizes for /who.
  
@@ -366,7 +372,7 @@ $def SYSTEMMARKER "(System Announcement)"
   24 strcut pop
   "^WHITE^------------------------------------------------------------------------^RESET^"
   "^GREEN^  GLORIA: Glow Chat System                                ^FOREST^" 
-  "$Revision: 1.28 $" 1 strcut swap pop dup strlen 1 - strcut pop strcat
+  "$Revision: 1.29 $" 1 strcut swap pop dup strlen 1 - strcut pop strcat
   ": ^YELLOW^" ": " subst
   "^FOREST^  By Feaelin Moilar (Iain E. Davis)             ^YELLOW^"
   4 rotate dup strlen 24 swap - "                   " 
@@ -1283,6 +1289,27 @@ $def SYSTEMMARKER "(System Announcement)"
   then
 ;
  
+: listChannels ( -- )
+  " LIST" menu-header
+  me @ "^WHITE^| ^FOREST^Channel^WHITE^                                                      | ^FOREST^Talk? ^WHITE^|" ansi_notify
+  me @ "^WHITE^|--------------------------------------------------------------+-------|" ansi_notify
+
+  DBITEM CHANNELDIR nextprop ( S-propname )
+  BEGIN dup STR-blank? not WHILE ( S-propname )
+    dup dup "/" rinstr strcut swap pop ( S-propname S-shortname )
+    command ! ( S-propname )
+    me @ canListen? if (S-propname )
+      getShortName getFullName ( S-propname S-channelname )
+      dup " " 61 STR-fillfield strcat ( S-propname S-line )
+      "^WHITE^| ^INFO^" swap strcat ( S-propname S-line )
+      "^WHITE^| ^INFO^" strcat ( S-propname S-line )
+      me @ swap ansi_notify
+    then
+    DBITEM swap nextprop (S-propname )
+  REPEAT
+  printWhoTail
+;
+ 
 : whoChannel ( s -- )
   dup STR-blank? if
     pop getShortName dup STR-blank? if
@@ -1307,7 +1334,7 @@ $def SYSTEMMARKER "(System Announcement)"
     exit
   then
   DBITEM CHANNELDIR nextprop
-  BEGIN  dup STR-blank? not WHILE
+  BEGIN dup STR-blank? not WHILE
     dup dup "/" rinstr strcut swap pop ( S-propname S-shortname )
     command ! ( Effectively making all getShortName's work )
     getShortName getAnnounceConnect if ( This channel announces connects? )
@@ -1390,6 +1417,11 @@ $def SYSTEMMARKER "(System Announcement)"
     then
     exit
   then
+  dup "list" strcmp not if
+    pop pop
+    listChannels
+    exit
+  then
   dup "edit" strcmp not if
     pop
     me @ "MAGE" flag? if
@@ -1435,7 +1467,7 @@ $def SYSTEMMARKER "(System Announcement)"
   then
   dup "who" strcmp not if
     pop
-	whoChannel
+    whoChannel
     exit
   then
   pop
