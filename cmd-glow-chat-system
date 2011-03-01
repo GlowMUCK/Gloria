@@ -2,14 +2,22 @@ wh me=Beginning installation of cmd-glow-chat-system
 @prog cmd-glow-chat-system
 1 99999 d
 1 i
-( cmd-chat-system: $Date: 2010/08/19 12:31:08 $ $Revision: 1.29 $             )
+( cmd-chat-system: $Date: 2011/02/27 18:40:02 $ $Revision: 1.30 $             )
 ( Purpose: Provides a muckwide chat network                                   )
 ( Author: Feaelin Moilar                                                      )
 ( Contributors:                                                               )
-( Dependencies: lib-strings, lib-edit, lib-case, lib-lmgr                     )
+( Dependencies: lib-strings, lib-edit, lib-case, lib-lmgr, lib-match          )
 ( --------------------------------------------------------------------------- )
 (
+  TODO: There may be a stack error surrounding the 'allow list' stuff.
+        Go into the menu and toggle the 'use allow list' option once or twice
+        then exit the system.
+)
+(
   $Log: cmd-glow-chat-system,v $
+  Revision 1.30  2011/02/27 18:40:02  feaelin
+  Started the /list command
+ 
   Revision 1.29  2010/08/19 12:31:08  Feaelin
   Refactored whoChannelHelper so that it accepts an address of the
   printWhoLine word/function to be used. In later iterations, this will allow
@@ -118,6 +126,7 @@ $include $lib/edit
 $include $lib/case
 $include $lib/lmgr
 $include $lib/mv-cp
+$include $lib/match
  
 $def CHANNELDIR "/Channels/"
 $def ALIASDIR   "/Aliases/"
@@ -191,6 +200,49 @@ $def SYSTEMMARKER "(System Announcement)"
     pop exit
   then
   DBITEM swap ALIASDIR swap strcat remove_prop
+;
+ 
+: getUseAllowedPlayerList ( S-ShortName -- S-Status )
+  DBITEM CHANNELDIR rot strcat "/UseAllowedPlayerList" strcat getpropval
+;
+ 
+: toggleUseAllowedPlayerList ( S-ShortName -- )
+  CHANNELDIR swap strcat "/UseAllowedPlayerList" strcat 
+  dup DBITEM swap getpropval if
+    DBITEM swap 0 setprop
+  else
+    DBITEM swap 1 setprop
+  then
+;
+ 
+: getAllowedPlayersString ( S-ShortName -- S-Names )
+  CHANNELDIR swap strcat "/AllowedPlayerList/" strcat
+  DBITEM swap nextprop
+  dup STR-blank? if
+    pop
+    "<Empty>"
+  else
+    "" swap
+    BEGIN
+      dup "/" STR-rsplit swap pop atoi dbref name 
+      rot swap strcat ", " strcat swap
+      DBITEM swap nextprop dup STR-blank?
+    UNTIL
+    pop dup strlen 2 - strcut pop
+  then
+  " ^INFO^List: ^MOVE^" swap strcat
+;
+ 
+: addAllowedPlayer ( S-ShortName D-PlayerRef -- )
+  DBITEM CHANNELDIR rot strcat
+  "/AllowedPlayerList/" strcat
+  3 rotate int intostr strcat 1 setprop
+;
+ 
+: removeAllowedPlayer ( S-ShortName D-PlayerRef -- )
+  DBITEM CHANNELDIR rot strcat
+  "/AllowedPlayerList/" strcat
+  3 rotate int intostr strcat remove_prop
 ;
  
 : getOptStatus ( S-ShortName -- S-OptStatus )
@@ -372,7 +424,7 @@ $def SYSTEMMARKER "(System Announcement)"
   24 strcut pop
   "^WHITE^------------------------------------------------------------------------^RESET^"
   "^GREEN^  GLORIA: Glow Chat System                                ^FOREST^" 
-  "$Revision: 1.29 $" 1 strcut swap pop dup strlen 1 - strcut pop strcat
+  "$Revision: 1.30 $" 1 strcut swap pop dup strlen 1 - strcut pop strcat
   ": ^YELLOW^" ": " subst
   "^FOREST^  By Feaelin Moilar (Iain E. Davis)             ^YELLOW^"
   4 rotate dup strlen 24 swap - "                   " 
@@ -478,6 +530,11 @@ $def SYSTEMMARKER "(System Announcement)"
   getShortName getLevelListen
   over mlevel > if
     pop 0 exit
+  then
+  ( Allowed by List? )
+  getShortName getUseAllowedPlayerList if
+    DBITEM CHANNELDIR getShortName strcat "/AllowedPLayerList/" strcat
+    me @ int intostr strcat getpropval if pop 1 exit else pop 0 exit then
   then
   pop 1
 ;
@@ -1123,6 +1180,72 @@ $def SYSTEMMARKER "(System Announcement)"
   me @ "^SUCC^Channel Colors Editor Exited." ansi_notify
 ; 
  
+: add-allowed-player-query ( S-ShortName -- )
+  "ADD-PLAYER: " getShortName strcat menu-header
+  me @ "^INFO^Enter the name of the player to add:" ansi_notify
+  read
+  MATCH-noisy_pmatch
+  dup ok? if
+    getShortName addAllowedPlayer
+  else
+    pop
+  then
+;
+ 
+: remove-allowed-player-query ( S-ShortName -- )
+  "REM-PLAYER: " getShortName strcat menu-header
+  me @ "^INFO^Enter the name of the player to remove:" ansi_notify
+  read
+  MATCH-noisy_pmatch
+  dup ok? if
+    getShortName removeAllowedPlayer
+  else
+    pop
+  then
+;
+ 
+: menu-allowed-players ( S-ShortName -- )
+  BEGIN
+    "ALLOWED: " getShortName strcat menu-header
+    " ^INFO^1. ^WHITE^Use Allowed Player List:    ^MOVE^"
+    2 pick getUseAllowedPlayerList if
+      "Yes"
+    else
+      "No"
+    then
+    strcat
+    " ^INFO^2. ^WHITE^Add Player"
+    " ^INFO^3. ^WHITE^Remove Player"
+    getShortName getAllowedPLayersString
+    " ^INFO^Q. ^WHITE^Quit Menu"
+    " ^INFO^E. ^WHITE^Exit Menu System"
+    6 EDIT-ansi_display
+    read tolower
+    case
+      "q" strcmp not when
+        me @ "^SUCC^Allowed Players Editor Exited." ansi_notify     
+        0 exit
+      end
+      "e" strcmp not when
+        me @ "^SUCC^Allowed Players Editor Exited." ansi_notify
+        1 1 exit
+      end
+      "1" strcmp not when
+        toggleUseAllowedPlayerList 0
+      end
+      "2" strcmp not when
+        add-allowed-player-query 0
+      end
+      "3" strcmp not when
+        remove-allowed-player-query 0
+      end
+      default pop me @ "^FAIL^Invalid Option!" ansi_notify 0 end
+    endcase
+  UNTIL
+  pop 0
+  me @ "^SUCC^Allowed Players Editor Exited." ansi_notify
+; 
+ 
 ( menu for editing general channel permissions )
 : menu-channel-permissions ( S-ShortName -- )
   BEGIN
@@ -1159,10 +1282,11 @@ $def SYSTEMMARKER "(System Announcement)"
     6 pick getLevelTalk intostr strcat
     " ^INFO^6. ^WHITE^Required M-Level to Listen: ^MOVE^"
     7 pick getLevelListen intostr strcat
-    " ^INFO^7. ^WHITE^Edit Optee List"    
+    " ^INFO^7. ^WHITE^Edit Allowed Player List"
+    " ^INFO^8. ^WHITE^Edit Optee List"
     " ^INFO^Q. ^WHITE^Quit Menu"
     " ^INFO^E. ^WHITE^Exit Menu System"
-    9 EDIT-ansi_display
+    10 EDIT-ansi_display
     read tolower
     case
       "q" strcmp not when
@@ -1179,10 +1303,11 @@ $def SYSTEMMARKER "(System Announcement)"
       "4" strcmp not when dup toggleZombieListen 0 end
       "5" strcmp not when dup talk-level-query 0 end
       "6" strcmp not when dup listen-level-query 0 end
+      "7" strcmp not when dup menu-allowed-players end
       default pop me @ "^FAIL^Invalid Option!" ansi_notify 0 end
     endcase
   UNTIL
-  pop 0
+  if 1 else 0 then
   me @ "^SUCC^Channel Permissions Editor Exited." ansi_notify
 ; 
  
