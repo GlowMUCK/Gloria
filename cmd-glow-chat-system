@@ -2,7 +2,7 @@ wh me=Beginning installation of cmd-glow-chat-system
 @prog cmd-glow-chat-system
 1 99999 d
 1 i
-( cmd-chat-system: $Date: 2011/02/27 18:40:02 $ $Revision: 1.30 $             )
+( cmd-chat-system: $Date: 2011/03/01 01:33:27 $ $Revision: 1.31 $             )
 ( Purpose: Provides a muckwide chat network                                   )
 ( Author: Feaelin Moilar                                                      )
 ( Contributors:                                                               )
@@ -15,6 +15,9 @@ wh me=Beginning installation of cmd-glow-chat-system
 )
 (
   $Log: cmd-glow-chat-system,v $
+  Revision 1.31  2011/03/01 01:33:27  feaelin
+  Added list based access for channels.
+ 
   Revision 1.30  2011/02/27 18:40:02  feaelin
   Started the /list command
  
@@ -424,7 +427,7 @@ $def SYSTEMMARKER "(System Announcement)"
   24 strcut pop
   "^WHITE^------------------------------------------------------------------------^RESET^"
   "^GREEN^  GLORIA: Glow Chat System                                ^FOREST^" 
-  "$Revision: 1.30 $" 1 strcut swap pop dup strlen 1 - strcut pop strcat
+  "$Revision: 1.31 $" 1 strcut swap pop dup strlen 1 - strcut pop strcat
   ": ^YELLOW^" ": " subst
   "^FOREST^  By Feaelin Moilar (Iain E. Davis)             ^YELLOW^"
   4 rotate dup strlen 24 swap - "                   " 
@@ -1416,18 +1419,26 @@ $def SYSTEMMARKER "(System Announcement)"
  
 : listChannels ( -- )
   " LIST" menu-header
-  me @ "^WHITE^| ^FOREST^Channel^WHITE^                                                      | ^FOREST^Talk? ^WHITE^|" ansi_notify
-  me @ "^WHITE^|--------------------------------------------------------------+-------|" ansi_notify
+  me @ "^WHITE^| ^FOREST^Short Name    ^WHITE^| ^FOREST^Channel^WHITE^                                      | ^FOREST^Talk? ^WHITE^|" ansi_notify
+  me @ "^WHITE^|---------------+----------------------------------------------+-------|" ansi_notify
 
   DBITEM CHANNELDIR nextprop ( S-propname )
   BEGIN dup STR-blank? not WHILE ( S-propname )
     dup dup "/" rinstr strcut swap pop ( S-propname S-shortname )
     command ! ( S-propname )
     me @ canListen? if (S-propname )
-      getShortName getFullName ( S-propname S-channelname )
-      dup " " 61 STR-fillfield strcat ( S-propname S-line )
-      "^WHITE^| ^INFO^" swap strcat ( S-propname S-line )
+      "^WHITE^| ^INFO^" (S-propname S-line )
+      getShortName dup " " 14 STR-fillfield strcat strcat ( S-propname S-line )
       "^WHITE^| ^INFO^" strcat ( S-propname S-line )
+      getShortName getFullName ( S-propname S-line S-channelname )
+      dup " " 45 STR-fillfield strcat strcat ( S-propname S-line )
+      "^WHITE^| ^INFO^" strcat ( S-propname S-line )
+      me @ canTalk? STR-blank? if
+        " Yes  ^WHITE^|"
+      else
+        "  No  ^WHITE^|"
+      then
+      strcat
       me @ swap ansi_notify
     then
     DBITEM swap nextprop (S-propname )
