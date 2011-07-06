@@ -2,7 +2,7 @@ wh me=Beginning installation of cmd-glow-chat-system
 @prog cmd-glow-chat-system
 1 99999 d
 1 i
-( cmd-chat-system: $Date: 2011/03/01 01:33:27 $ $Revision: 1.31 $             )
+( cmd-chat-system: $Date: 2011/03/08 18:45:44 $ $Revision: 1.32 $             )
 ( Purpose: Provides a muckwide chat network                                   )
 ( Author: Feaelin Moilar                                                      )
 ( Contributors:                                                               )
@@ -12,9 +12,15 @@ wh me=Beginning installation of cmd-glow-chat-system
   TODO: There may be a stack error surrounding the 'allow list' stuff.
         Go into the menu and toggle the 'use allow list' option once or twice
         then exit the system.
+        * Make timestamping optional for the viewer
+        * Make timestamp format string configurable by the viewer
 )
 (
   $Log: cmd-glow-chat-system,v $
+  Revision 1.32  2011/03/08 18:45:44  feaelin
+  Completed /list. It now shows the channel short name and talk ability of
+  user.
+ 
   Revision 1.31  2011/03/01 01:33:27  feaelin
   Added list based access for channels.
  
@@ -427,7 +433,7 @@ $def SYSTEMMARKER "(System Announcement)"
   24 strcut pop
   "^WHITE^------------------------------------------------------------------------^RESET^"
   "^GREEN^  GLORIA: Glow Chat System                                ^FOREST^" 
-  "$Revision: 1.31 $" 1 strcut swap pop dup strlen 1 - strcut pop strcat
+  "$Revision: 1.32 $" 1 strcut swap pop dup strlen 1 - strcut pop strcat
   ": ^YELLOW^" ": " subst
   "^FOREST^  By Feaelin Moilar (Iain E. Davis)             ^YELLOW^"
   4 rotate dup strlen 24 swap - "                   " 
@@ -503,8 +509,11 @@ $def SYSTEMMARKER "(System Announcement)"
 ;
  
 : NotifyPlayer ( D-player S-message -- )
-  getShortName getNetColor getShortName strcat getNetSeparator strcat
-  " " strcat swap strcat
+  getShortName getNetColor getShortName strcat 
+  getNetSeparator strcat
+  " " strcat
+  "%Y-%b-%d %X" systime timefmt strcat ": " strcat
+  swap strcat
   getShortName getMessageColor "^MESSAGECOLOR^" subst
   getShortName getSayMessageColor "^SAYMESSAGECOLOR^" subst
   ansi_notify
@@ -691,8 +700,8 @@ $def SYSTEMMARKER "(System Announcement)"
     exit
   then
   "Inactive" strcmp not if
-    pop pop
-    "^FAIL^Sorry, the ^MOVE^" rot getFullName
+    swap pop
+    "^FAIL^Sorry, the ^MOVE^" swap getFullName
     strcat "^FAIL^ is disabled." strcat
     exit
   then
@@ -732,8 +741,6 @@ $def SYSTEMMARKER "(System Announcement)"
     swap pop
     exit
   then
-  ( Someday, do group permissions here )
-
   ( Wow...passed all of it? )
   pop pop
   ""
