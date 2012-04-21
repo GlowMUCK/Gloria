@@ -2,7 +2,7 @@ wh me=Beginning installation of cmd-glow-chat-system
 @prog cmd-glow-chat-system
 1 99999 d
 1 i
-( cmd-chat-system: $Date: 2011/03/08 18:45:44 $ $Revision: 1.32 $             )
+( cmd-chat-system: $Date: 2011/07/06 16:15:50 $ $Revision: 1.33 $             )
 ( Purpose: Provides a muckwide chat network                                   )
 ( Author: Feaelin Moilar                                                      )
 ( Contributors:                                                               )
@@ -14,9 +14,15 @@ wh me=Beginning installation of cmd-glow-chat-system
         then exit the system.
         * Make timestamping optional for the viewer
         * Make timestamp format string configurable by the viewer
+        * Allow viewer to turn off announcements (any of the 4)
+        * Allow viewer to customize the colors to their own taste
+        * Easier Color Selection?
 )
 (
   $Log: cmd-glow-chat-system,v $
+  Revision 1.33  2011/07/06 16:15:50  feaelin
+  Added timestamps to the output.
+
   Revision 1.32  2011/03/08 18:45:44  feaelin
   Completed /list. It now shows the channel short name and talk ability of
   user.
@@ -433,7 +439,7 @@ $def SYSTEMMARKER "(System Announcement)"
   24 strcut pop
   "^WHITE^------------------------------------------------------------------------^RESET^"
   "^GREEN^  GLORIA: Glow Chat System                                ^FOREST^" 
-  "$Revision: 1.32 $" 1 strcut swap pop dup strlen 1 - strcut pop strcat
+  "$Revision: 1.33 $" 1 strcut swap pop dup strlen 1 - strcut pop strcat
   ": ^YELLOW^" ": " subst
   "^FOREST^  By Feaelin Moilar (Iain E. Davis)             ^YELLOW^"
   4 rotate dup strlen 24 swap - "                   " 
@@ -1473,22 +1479,21 @@ $def SYSTEMMARKER "(System Announcement)"
 : connectAnnouncement ( -- )
   ( We only announce if the person is actually connected and this is their )
   ( only connection.                                                       )
-  me @ awake? 1 = not if
-    exit
-  then
-  DBITEM CHANNELDIR nextprop
-  BEGIN dup STR-blank? not WHILE
-    dup dup "/" rinstr strcut swap pop ( S-propname S-shortname )
-    command ! ( Effectively making all getShortName's work )
-    getShortName getAnnounceConnect if ( This channel announces connects? )
-      me @ getShortName isListening? if    
-        ":connects and starts listening to " getShortName getFullName strcat
-        ". " strcat getShortName getNetColor strcat SYSTEMMARKER strcat
-        Talk
+  me @ awake? 1 = if
+    DBITEM CHANNELDIR nextprop
+    BEGIN dup STR-blank? not WHILE
+      dup dup "/" rinstr strcut swap pop ( S-propname S-shortname )
+      command ! ( Effectively making all getShortName's work )
+      getShortName getAnnounceConnect if ( This channel announces connects? )
+        me @ getShortName isListening? if    
+          ":connects and starts listening to " getShortName getFullName strcat
+          ". " strcat getShortName getNetColor strcat SYSTEMMARKER strcat
+          Talk
+        then
       then
-    then
-    DBITEM swap nextprop
-  REPEAT
+      DBITEM swap nextprop
+    REPEAT
+  then
 ;
  
 : disconnectAnnouncement ( -- )
@@ -1514,10 +1519,14 @@ $def SYSTEMMARKER "(System Announcement)"
   REPEAT
 ;
  
-: main
+: main ( s-args -- )
+  ( To prevent programmers from calling this after overwriting 'me' )
+  "me" match me !
+
   strip
   ( To make it difficult to fake chat system messages )
   "" SYSTEMMARKER subst
+
   dup STR-blank? if
     pop print-help exit
   then
