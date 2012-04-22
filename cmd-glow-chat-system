@@ -2,7 +2,7 @@ wh me=Beginning installation of cmd-glow-chat-system
 @prog cmd-glow-chat-system
 1 99999 d
 1 i
-( cmd-chat-system: $Date: 2011/07/06 16:15:50 $ $Revision: 1.33 $             )
+( cmd-chat-system: $Date: 2012/04/21 21:17:25 $ $Revision: 1.34 $             )
 ( Purpose: Provides a muckwide chat network                                   )
 ( Author: Feaelin Moilar                                                      )
 ( Contributors:                                                               )
@@ -14,15 +14,18 @@ wh me=Beginning installation of cmd-glow-chat-system
         then exit the system.
         * Make timestamping optional for the viewer
         * Make timestamp format string configurable by the viewer
-        * Allow viewer to turn off announcements (any of the 4)
+        * Allow viewer to turn off announcements any of the 4
         * Allow viewer to customize the colors to their own taste
         * Easier Color Selection?
 )
 (
   $Log: cmd-glow-chat-system,v $
+  Revision 1.34  2012/04/21 21:17:25  feaelin
+  Tighted code in connectAnnouncement
+ 
   Revision 1.33  2011/07/06 16:15:50  feaelin
   Added timestamps to the output.
-
+ 
   Revision 1.32  2011/03/08 18:45:44  feaelin
   Completed /list. It now shows the channel short name and talk ability of
   user.
@@ -260,6 +263,35 @@ $def SYSTEMMARKER "(System Announcement)"
   3 rotate int intostr strcat remove_prop
 ;
  
+: getAutoOnOffMode ( S-ShortName -- S-OptStatus )
+  DBITEM CHANNELDIR rot strcat "/AutoOnOffMode" strcat getpropval
+;
+ 
+: toggleAutoOnOffMode ( S-ShortName -- )
+  CHANNELDIR swap strcat "/AutoOnOffMode" strcat 
+  dup DBITEM swap getpropval dup 0 = if
+    pop DBITEM swap 1 setprop
+  else
+    1 = if
+      DBITEM swap 2 setprop
+    else
+      DBITEM swap 0 setprop
+    then
+  then
+;
+ 
+: modeToDescription ( I-Mode -- S-ModeDescription )
+  dup 0 = if
+    pop "None"
+  else
+    1 = if
+      "Auto Off"
+    else
+      "Auto On"
+    then
+  then
+;
+ 
 : getOptStatus ( S-ShortName -- S-OptStatus )
   DBITEM CHANNELDIR rot strcat "/OptInOut" strcat getpropstr
 ;
@@ -439,7 +471,7 @@ $def SYSTEMMARKER "(System Announcement)"
   24 strcut pop
   "^WHITE^------------------------------------------------------------------------^RESET^"
   "^GREEN^  GLORIA: Glow Chat System                                ^FOREST^" 
-  "$Revision: 1.33 $" 1 strcut swap pop dup strlen 1 - strcut pop strcat
+  "$Revision: 1.34 $" 1 strcut swap pop dup strlen 1 - strcut pop strcat
   ": ^YELLOW^" ": " subst
   "^FOREST^  By Feaelin Moilar (Iain E. Davis)             ^YELLOW^"
   4 rotate dup strlen 24 swap - "                   " 
@@ -450,12 +482,14 @@ $def SYSTEMMARKER "(System Announcement)"
  
 : print-short-help ( -- )
   "SHORT-HELP" menu-header
+  "gloria /list           Lists channels you have access to."
   "gloria /who            Lists players listening to channels you can hear."
   me @ "MAGE" flag? if
     "gloria /add            Adds a channel to the system."
-    2 EDIT-ansi_display
+    "<channelcommand> /edit Edit a channel that already exists."
+    4 EDIT-ansi_display
   else
-    1 EDIT-ansi_display
+    2 EDIT-ansi_display
   then  
 ;
  
@@ -597,90 +631,105 @@ $def SYSTEMMARKER "(System Announcement)"
   5 popn
 ;
  
-: joinChannel ( -- )
-  me @ canListen? not if
-    me @ "^FAIL^You have insufficient permissions to listen to that channel."
-    ansi_notify
-    exit
-  then 
-  getShortName dup getOptStatus
-  "I" strcmp not if
-    dup getOptList me @ intostr "#" swap strcat "#" strcat
-    over over instr if
-      pop pop pop
-      me @ "^FAIL^You have already joined that channel." ansi_notify
-     else
-       strcat setOptList
-      getShortName getAnnounceJoin if
-         ":joins the " getShortName getFullName strcat
-         ". " getShortName getNetColor strcat SYSTEMMARKER strcat strcat
-         Talk
-       else
-        me @
-        "^SUCC^You join the ^MOVE^" getShortName getFullName strcat
-        "^SUCC^." strcat
-        ansi_notify
-       then
-    then
-  else
-    dup getOptList me @ intostr "#" swap strcat "#" strcat
-    over over instr if
-      "" swap subst setOptList
-      getShortName getAnnounceJoin if
-         ":joins the " getShortName getFullName strcat
-         ". (Chat System Announcement)" strcat
-         Talk
-       else
-        me @
-        "^SUCC^You join the ^MOVE^" getShortName getFullName strcat
-        "^SUCC^." strcat
-        ansi_notify
-       then
+: maybeJoinNotify ( B-Noisy -- )
+  if ( b-noisy )
+    getShortName getAnnounceUnjoin if
+      ":joins the " getShortName getFullName strcat
+      ". " getShortName getNetColor strcat SYSTEMMARKER strcat strcat
+      Talk
     else
-      pop pop pop
-      me @ "^FAIL^You have already joined that channel." ansi_notify
-    then  
+      me @
+      "^SUCC^You join the ^MOVE^" getShortName getFullName strcat
+      "^SUCC^." strcat
+      ansi_notify
+    then
   then
 ;
  
-: unJoinChannel ( -- )
-  getShortName dup getOptStatus
-  "O" strcmp not if
-    dup getOptList me @ intostr "#" swap strcat "#" strcat
-    over over instr if
-      pop pop pop
-      me @ "^FAIL^You're already not a member of that channel." ansi_notify
+: maybeJoinFailNotify ( B-Noisy s-junk s-junk s-junk -- )
+  3 popn
+  if
+    me @ "^FAIL^You have already joined that channel." ansi_notify
+  then
+;
+ 
+: joinChannel ( B-Noisy -- )
+  me @ canListen? if
+    getShortName
+    dup getOptList
+
+   ( #dbref#, so list: #dbref##dbref# ... )
+   me @ intostr "#" swap strcat "#" strcat
+  
+   3 pick getOptStatus
+   "I" strcmp not if ( Opt-In Channel, add to list )
+     over over instr if
+       maybeJoinFailNotify
      else
-      getShortName getAnnounceUnjoin if
-         ":leaves the " getShortName getFullName strcat
-         ". " getShortName getNetColor strcat SYSTEMMARKER strcat strcat
-         Talk
-       else
-        me @
-        "^SUCC^You leave the ^MOVE^" getShortName getFullName strcat
-        "^SUCC^." strcat
-        ansi_notify
-       then
        strcat setOptList
+       maybeJoinNotify
+     then
+   else ( opt-out channel, remove from list )
+     over over instr if
+       "" swap subst
+       maybeJoinNotify
+     else
+       maybeJoinFailNotify
+     then
+   then
+  else ( can't listen )
+    if ( b-noisy )
+      me @ "^FAIL^You have insufficient permissions to listen to that channel."
+      ansi_notify
     then
-  else
-    dup getOptList me @ intostr "#" swap strcat "#" strcat
+  then ( canListen? )
+;
+ 
+: maybeRemovalNotify ( B-Noisy -- )
+  if ( b-noisy )
+    getShortName getAnnounceUnjoin if
+      ":leaves the " getShortName getFullName strcat
+      ". " getShortName getNetColor strcat SYSTEMMARKER strcat strcat
+      Talk
+    else
+      me @
+      "^SUCC^You leave the ^MOVE^" getShortName getFullName strcat
+      "^SUCC^." strcat
+      ansi_notify
+    then
+  then
+;
+ 
+: maybeRemovalFailNotify ( B-Noisy s-junk s-junk s-junk -- )
+  3 popn
+  if
+    me @ "^FAIL^You're already not a member of that channel." ansi_notify
+  then
+;
+ 
+( Actually perform the removal of a player from a channel )
+: unJoinChannel ( B-Noisy -- )
+  getShortName
+  dup getOptList
+
+  ( #dbref#, so list: #dbref##dbref# ... )
+  me @ intostr "#" swap strcat "#" strcat
+
+  3 pick getOptStatus
+  "O" strcmp not if ( Opt out channel, so we add to the opter-outer to the list )
     over over instr if
-      getShortName getAnnounceUnjoin if
-         ":leaves the " getShortName getFullName strcat
-         ". " getShortName getNetColor strcat SYSTEMMARKER strcat strcat
-         Talk
-       else
-        me @
-        "^SUCC^You leave the ^MOVE^" getShortName getFullName strcat
-        "^SUCC^." strcat
-        ansi_notify
-       then
+      maybeRemovalFailNotify
+    else
+      4 rotate maybeRemovalNotify
+      strcat setOptList
+    then
+  else ( Opt in channel, so we remove the opter-outer from the list )
+    over over instr if
+      4 rotate maybeRemovalNotify
       "" swap subst setOptList
     else
-      pop pop pop
-      me @ "^FAIL^You're already not a member of that channel." ansi_notify
-    then  
+      maybeRemovalFailNotify
+    then
   then
 ;
  
@@ -1339,14 +1388,16 @@ $def SYSTEMMARKER "(System Announcement)"
     4 pick getAliases strcat
     " ^INFO^4. ^WHITE^Opt-In/Opt-Out:        ^MOVE^"
     5 pick getOptStatus strcat
-    " ^INFO^5. ^WHITE^Channel Status:        ^MOVE^"
+    " ^INFO^5. ^WHITE^Toggle Auto On/Off:    ^MOVE^"
+    6 pick getAutoOnOffMode modeToDescription strcat
+    " ^INFO^6. ^WHITE^Channel Status:        ^MOVE^"
     6 pick getActive strcat
-    " ^INFO^6. ^WHITE^Edit Announcements"
-    " ^INFO^7. ^WHITE^Edit Colors"
-    " ^INFO^8. ^WHITE^Edit Permissions"
+    " ^INFO^7. ^WHITE^Edit Announcements"
+    " ^INFO^8. ^WHITE^Edit Colors"
+    " ^INFO^9. ^WHITE^Edit Permissions"
     " ^INFO^Q. ^WHITE^Quit Menu"
     " ^INFO^E. ^WHITE^Exit Menu System"
-    10 EDIT-ansi_display
+    11 EDIT-ansi_display
     read tolower
     case
       "q" strcmp not when exit end
@@ -1359,10 +1410,11 @@ $def SYSTEMMARKER "(System Announcement)"
         "2" strcmp not when dup full-name-query 0 end
         "3" strcmp not when dup alias-list-query 0 end
         "4" strcmp not when dup opt-query 0 end
-        "5" strcmp not when dup status-toggle 0 end
-        "6" strcmp not when dup menu-channel-announcements end
-        "7" strcmp not when dup menu-channel-colors end
-        "8" strcmp not when dup menu-channel-permissions end
+        "5" strcmp not when dup toggleAutoOnOffMode 0 end
+        "6" strcmp not when dup status-toggle 0 end
+        "7" strcmp not when dup menu-channel-announcements end
+        "8" strcmp not when dup menu-channel-colors end
+        "9" strcmp not when dup menu-channel-permissions end
       then
       default pop me @ "^FAIL^Invalid Option!" ansi_notify 0 end
     endcase
@@ -1430,6 +1482,37 @@ $def SYSTEMMARKER "(System Announcement)"
   then
 ;
  
+: autoOnOff ( -- )
+  DBITEM CHANNELDIR nextprop ( S-propname )
+  BEGIN dup STR-blank? not WHILE ( S-propname )
+    dup dup "/" rinstr strcut swap pop ( S-propname S-shortname )
+    command ! ( S-propname )
+    getShortName getAutoOnOffMode
+    dup 1 = if
+      pop
+      me @ getShortName isListening? if
+        0 unJoinChannel
+        me @
+        "^SUCC^You automatically stop listening to the ^MOVE^" getShortName getFullName strcat
+        "^SUCC^." strcat
+        ansi_notify
+      then
+    else
+      2 = if
+        me @ canListen? if
+          0 joinChannel
+          me @
+          "^SUCC^You automatically start listening to the ^MOVE^" getShortName getFullName strcat
+          "^SUCC^." strcat
+          ansi_notify
+        then
+      then
+    then
+    DBITEM swap nextprop (S-propname )
+  REPEAT
+  pop
+;
+ 
 : listChannels ( -- )
   " LIST" menu-header
   me @ "^WHITE^| ^FOREST^Short Name    ^WHITE^| ^FOREST^Channel^WHITE^                                      | ^FOREST^Talk? ^WHITE^|" ansi_notify
@@ -1494,6 +1577,7 @@ $def SYSTEMMARKER "(System Announcement)"
       DBITEM swap nextprop
     REPEAT
   then
+  pop
 ;
  
 : disconnectAnnouncement ( -- )
@@ -1532,13 +1616,16 @@ $def SYSTEMMARKER "(System Announcement)"
   then
   dup "Connect" strcmp not if
     ( This prevents someone from triggering an announcement by hand )
-    trig #-1 dbcmp if 
-      pop connectAnnouncement exit
+    trig #-1 dbcmp if
+      pop
+      autoOnOff
+      connectAnnouncement
+      exit
     then
   then
   dup "Disconnect" strcmp not if
     ( This prevents someone from triggering an announcement by hand )
-    trig #-1 dbcmp if 
+    trig #-1 dbcmp if
       pop disconnectAnnouncement exit
     then
   then
@@ -1546,7 +1633,7 @@ $def SYSTEMMARKER "(System Announcement)"
     pop
     me @ canTalk? dup STR-blank? if
       me @ getShortName isListening? not if
-        joinChannel
+        1 joinChannel
       then
       pop striplead Talk ( output to appropiate channel )
     else
@@ -1589,32 +1676,32 @@ $def SYSTEMMARKER "(System Announcement)"
   then
   dup "on" strcmp not if
     pop pop
-    joinChannel
+    1 joinChannel
     exit
   then
   dup "join" strcmp not if
     pop pop
-    joinChannel
+    1 joinChannel
     exit
   then
   dup "enter" strcmp not if
     pop pop
-    joinChannel
+    1 joinChannel
     exit
   then
   dup "off" strcmp not if
     pop pop
-    unJoinChannel
+    1 unJoinChannel
     exit
   then
   dup "unjoin" strcmp not if
     pop pop
-    unJoinChannel
+    1 unJoinChannel
     exit
   then
   dup "leave" strcmp not if
     pop pop
-    unJoinChannel
+    1 unJoinChannel
     exit
   then
   dup "who" strcmp not if
