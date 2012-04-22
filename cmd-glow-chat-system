@@ -2,7 +2,7 @@ wh me=Beginning installation of cmd-glow-chat-system
 @prog cmd-glow-chat-system
 1 99999 d
 1 i
-( cmd-chat-system: $Date: 2012/04/22 13:01:53 $ $Revision: 1.35 $             )
+( cmd-chat-system: $Date: 2012/04/22 13:18:47 $ $Revision: 1.36 $             )
 ( Purpose: Provides a muckwide chat network                                   )
 ( Author: Feaelin Moilar                                                      )
 ( Contributors:                                                               )
@@ -17,9 +17,14 @@ wh me=Beginning installation of cmd-glow-chat-system
         * Allow viewer to turn off announcements any of the 4
         * Allow viewer to customize the colors to their own taste
         * Easier Color Selection?
+        * Checkconfiguration should check for the connect/disconnect props
 )
 (
   $Log: cmd-glow-chat-system,v $
+  Revision 1.36  2012/04/22 13:18:47  feaelin
+  Fixed autoOnOff from executing if connecting connection is a duplicate.
+  Added configuration check for the $chat/chatobject registry entry.
+ 
   Revision 1.35  2012/04/22 13:01:53  feaelin
   Added the auto on or auto off feature.
  
@@ -474,7 +479,7 @@ $def SYSTEMMARKER "(System Announcement)"
   24 strcut pop
   "^WHITE^------------------------------------------------------------------------^RESET^"
   "^GREEN^  GLORIA: Glow Chat System                                ^FOREST^" 
-  "$Revision: 1.35 $" 1 strcut swap pop dup strlen 1 - strcut pop strcat
+  "$Revision: 1.36 $" 1 strcut swap pop dup strlen 1 - strcut pop strcat
   ": ^YELLOW^" ": " subst
   "^FOREST^  By Feaelin Moilar (Iain E. Davis)             ^YELLOW^"
   4 rotate dup strlen 24 swap - "                   " 
@@ -1609,13 +1614,28 @@ $def SYSTEMMARKER "(System Announcement)"
 : checkConfiguration ( -- )
   "$chat/chatobject" match dup ok? if
     dup exit? swap trig dbcmp and not if
-      me @ "^FAIL^WARNING! The chat system exit is incorrectly registered. $chat/chatobject should point to " 
-      trig intostr "#" swap strcat strcat "." strcat ansi_notify
+      me @ "ARCHWIZARD" flag? if
+        #0 "_reg/chat/chatobject" trig setprop
+      else
+        me @ "^FAIL^WARNING! The chat system exit is incorrectly configured. Notify a W3+ staff member." ansi_notify
+      then
     then
   else
-    pop
-    me @ "^FAIL^WARNING! The chat system exit is not registered as $chat/chatobject. $chat/chatobject should point to "
-    trig intostr "#" swap strcat strcat "." strcat ansi_notify
+    me @ "ARCHWIZARD" flag? if
+      #0 "_reg/chat/chatobject" trig setprop
+    else
+      me @ "^FAIL^WARNING! The chat system exit is incorrectly configured. Notify a W3+ staff member." ansi_notify
+    then
+  then
+  trig name "gloria" instr not if
+    me @ "ARCHWIZARD" flag? if
+      trig name "gloria;" swap strcat trig swap setname
+    then
+  then
+  trig name "gcs" instr not if
+    me @ "ARCHWIZARD" flag? if
+      trig name "gcs;" swap strcat trig swap setname
+    then
   then
 ;
  
@@ -1739,3 +1759,5 @@ q
 @register cmd-glow-chat-system=cmd/glow-chat-system
 @set $cmd/glow-chat-system=L
 @set $cmd/glow-chat-system=W3
+@set $cmd/glow-chat-system=_version:$Revision$
+
