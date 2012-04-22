@@ -2,7 +2,7 @@ wh me=Beginning installation of cmd-glow-chat-system
 @prog cmd-glow-chat-system
 1 99999 d
 1 i
-( cmd-chat-system: $Date: 2012/04/21 21:17:25 $ $Revision: 1.34 $             )
+( cmd-chat-system: $Date: 2012/04/22 13:01:53 $ $Revision: 1.35 $             )
 ( Purpose: Provides a muckwide chat network                                   )
 ( Author: Feaelin Moilar                                                      )
 ( Contributors:                                                               )
@@ -20,6 +20,9 @@ wh me=Beginning installation of cmd-glow-chat-system
 )
 (
   $Log: cmd-glow-chat-system,v $
+  Revision 1.35  2012/04/22 13:01:53  feaelin
+  Added the auto on or auto off feature.
+ 
   Revision 1.34  2012/04/21 21:17:25  feaelin
   Tighted code in connectAnnouncement
  
@@ -153,7 +156,7 @@ $def SYSTEMMARKER "(System Announcement)"
  
 : DBITEM
   trig dup #-1 dbcmp if
-    pop "$muf/chatobject" match
+    pop "$chat/chatobject" match
   then
 ;
  
@@ -471,7 +474,7 @@ $def SYSTEMMARKER "(System Announcement)"
   24 strcut pop
   "^WHITE^------------------------------------------------------------------------^RESET^"
   "^GREEN^  GLORIA: Glow Chat System                                ^FOREST^" 
-  "$Revision: 1.34 $" 1 strcut swap pop dup strlen 1 - strcut pop strcat
+  "$Revision: 1.35 $" 1 strcut swap pop dup strlen 1 - strcut pop strcat
   ": ^YELLOW^" ": " subst
   "^FOREST^  By Feaelin Moilar (Iain E. Davis)             ^YELLOW^"
   4 rotate dup strlen 24 swap - "                   " 
@@ -1603,6 +1606,19 @@ $def SYSTEMMARKER "(System Announcement)"
   REPEAT
 ;
  
+: checkConfiguration ( -- )
+  "$chat/chatobject" match dup ok? if
+    dup exit? swap trig dbcmp and not if
+      me @ "^FAIL^WARNING! The chat system exit is incorrectly registered. $chat/chatobject should point to " 
+      trig intostr "#" swap strcat strcat "." strcat ansi_notify
+    then
+  else
+    pop
+    me @ "^FAIL^WARNING! The chat system exit is not registered as $chat/chatobject. $chat/chatobject should point to "
+    trig intostr "#" swap strcat strcat "." strcat ansi_notify
+  then
+;
+ 
 : main ( s-args -- )
   ( To prevent programmers from calling this after overwriting 'me' )
   "me" match me !
@@ -1612,14 +1628,18 @@ $def SYSTEMMARKER "(System Announcement)"
   "" SYSTEMMARKER subst
 
   dup STR-blank? if
+    checkConfiguration
     pop print-help exit
   then
   dup "Connect" strcmp not if
     ( This prevents someone from triggering an announcement by hand )
     trig #-1 dbcmp if
       pop
-      autoOnOff
-      connectAnnouncement
+      ( Both of these should not execute if this is a duplicate connection )
+      me @ awake? 1 = if
+        autoOnOff
+        connectAnnouncement
+      then
       exit
     then
   then
@@ -1629,6 +1649,7 @@ $def SYSTEMMARKER "(System Announcement)"
       pop disconnectAnnouncement exit
     then
   then
+  checkConfiguration
   dup STR-command dup "" strcmp not if
     pop
     me @ canTalk? dup STR-blank? if
