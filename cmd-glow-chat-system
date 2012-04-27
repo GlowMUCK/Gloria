@@ -2,7 +2,7 @@ wh me=Beginning installation of cmd-glow-chat-system
 @prog cmd-glow-chat-system
 1 99999 d
 1 i
-( cmd-chat-system: $Date: 2012/04/22 13:30:50 $ $Revision: 1.37 $             )
+( cmd-chat-system: $Date: 2012/04/25 17:41:14 $ $Revision: 1.38 $             )
 ( Purpose: Provides a muckwide chat network                                   )
 ( Author: Feaelin Moilar                                                      )
 ( Contributors:                                                               )
@@ -21,6 +21,9 @@ wh me=Beginning installation of cmd-glow-chat-system
 )
 (
   $Log: cmd-glow-chat-system,v $
+  Revision 1.38  2012/04/25 17:41:14  feaelin
+  Fixed problem where active/inactive wasn't displaying.
+
   Revision 1.37  2012/04/22 13:30:50  feaelin
   Added word to check on the configuration settings
   Such as the registry entry and basic command presence.
@@ -483,7 +486,7 @@ $def SYSTEMMARKER "(System Announcement)"
   24 strcut pop
   "^WHITE^------------------------------------------------------------------------^RESET^"
   "^GREEN^  GLORIA: Glow Chat System                                ^FOREST^" 
-  "$Revision: 1.37 $" 1 strcut swap pop dup strlen 1 - strcut pop strcat
+  "$Revision: 1.38 $" 1 strcut swap pop dup strlen 1 - strcut pop strcat
   ": ^YELLOW^" ": " subst
   "^FOREST^  By Feaelin Moilar (Iain E. Davis)             ^YELLOW^"
   4 rotate dup strlen 24 swap - "                   " 
@@ -645,7 +648,7 @@ $def SYSTEMMARKER "(System Announcement)"
  
 : maybeJoinNotify ( B-Noisy -- )
   if ( b-noisy )
-    getShortName getAnnounceUnjoin if
+    getShortName getAnnounceJoin if
       ":joins the " getShortName getFullName strcat
       ". " getShortName getNetColor strcat SYSTEMMARKER strcat strcat
       Talk
@@ -1763,5 +1766,4 @@ q
 @register cmd-glow-chat-system=cmd/glow-chat-system
 @set $cmd/glow-chat-system=L
 @set $cmd/glow-chat-system=W3
-@set $cmd/glow-chat-system=_version:$Revision: 1.37 $
-
+@set $cmd/glow-chat-system=_version:$Revision: 1.38 $
