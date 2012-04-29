@@ -2,7 +2,7 @@ wh me=Beginning installation of cmd-glow-chat-system
 @prog cmd-glow-chat-system
 1 99999 d
 1 i
-( cmd-chat-system: $Date: 2012/04/25 17:41:14 $ $Revision: 1.38 $             )
+( cmd-chat-system: $Date: 2012/04/27 21:39:59 $ $Revision: 1.39 $             )
 ( Purpose: Provides a muckwide chat network                                   )
 ( Author: Feaelin Moilar                                                      )
 ( Contributors:                                                               )
@@ -21,6 +21,9 @@ wh me=Beginning installation of cmd-glow-chat-system
 )
 (
   $Log: cmd-glow-chat-system,v $
+  Revision 1.39  2012/04/27 21:39:59  feaelin
+  Fixed issue where join announces weren't being announced.
+
   Revision 1.38  2012/04/25 17:41:14  feaelin
   Fixed problem where active/inactive wasn't displaying.
 
@@ -486,7 +489,7 @@ $def SYSTEMMARKER "(System Announcement)"
   24 strcut pop
   "^WHITE^------------------------------------------------------------------------^RESET^"
   "^GREEN^  GLORIA: Glow Chat System                                ^FOREST^" 
-  "$Revision: 1.38 $" 1 strcut swap pop dup strlen 1 - strcut pop strcat
+  "$Revision: 1.39 $" 1 strcut swap pop dup strlen 1 - strcut pop strcat
   ": ^YELLOW^" ": " subst
   "^FOREST^  By Feaelin Moilar (Iain E. Davis)             ^YELLOW^"
   4 rotate dup strlen 24 swap - "                   " 
@@ -694,8 +697,7 @@ $def SYSTEMMARKER "(System Announcement)"
    then
   else ( can't listen )
     if ( b-noisy )
-      me @ "^FAIL^You have insufficient permissions to listen to that channel."
-      ansi_notify
+      me @ "huh_mesg" sysparm "^INFO^" swap strcat ansi_notify
     then
   then ( canListen? )
 ;
@@ -1569,6 +1571,11 @@ $def SYSTEMMARKER "(System Announcement)"
       exit
     then
   then
+  me @ canListen? not if
+    pop 
+    me @ "huh_mesg" sysparm "^INFO^" swap strcat ansi_notify
+    exit
+  then
   printWhoHeader
   'printWhoLine swap whoChannelHelper
   printWhoTail
@@ -1656,7 +1663,13 @@ $def SYSTEMMARKER "(System Announcement)"
 
   dup STR-blank? if
     checkConfiguration
-    pop print-help exit
+    pop
+    me @ canListen? if
+      print-help
+    else
+      me @ "huh_mesg" sysparm "^INFO^" swap strcat ansi_notify
+    then
+    exit
   then
   dup "Connect" strcmp not if
     ( This prevents someone from triggering an announcement by hand )
@@ -1766,4 +1779,4 @@ q
 @register cmd-glow-chat-system=cmd/glow-chat-system
 @set $cmd/glow-chat-system=L
 @set $cmd/glow-chat-system=W3
-@set $cmd/glow-chat-system=_version:$Revision: 1.38 $
+@set $cmd/glow-chat-system=_version:$Revision: 1.39 $
