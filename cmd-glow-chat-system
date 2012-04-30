@@ -2,7 +2,7 @@ wh me=Beginning installation of cmd-glow-chat-system
 @prog cmd-glow-chat-system
 1 99999 d
 1 i
-( cmd-chat-system: $Date: 2012/04/29 00:18:49 $ $Revision: 1.40 $             )
+( cmd-chat-system: $Date: 2012/04/29 00:22:23 $ $Revision: 1.41 $             )
 ( Purpose: Provides a muckwide chat network                                   )
 ( Author: Feaelin Moilar                                                      )
 ( Contributors:                                                               )
@@ -21,19 +21,22 @@ wh me=Beginning installation of cmd-glow-chat-system
 )
 (
   $Log: cmd-glow-chat-system,v $
+  Revision 1.41  2012/04/29 00:22:23  feaelin
+  Blocked all use unless you can listen.
+ 
   Revision 1.40  2012/04/29 00:18:49  feaelin
   If you don't have permission to use a channel, it now gives you a 'huh' if you try to use it.
-
+ 
   Revision 1.39  2012/04/27 21:39:59  feaelin
   Fixed issue where join announces weren't being announced.
-
+ 
   Revision 1.38  2012/04/25 17:41:14  feaelin
   Fixed problem where active/inactive wasn't displaying.
-
+ 
   Revision 1.37  2012/04/22 13:30:50  feaelin
   Added word to check on the configuration settings
   Such as the registry entry and basic command presence.
-
+ 
   Revision 1.36  2012/04/22 13:18:47  feaelin
   Fixed autoOnOff from executing if connecting connection is a duplicate.
   Added configuration check for the $chat/chatobject registry entry.
@@ -492,7 +495,7 @@ $def SYSTEMMARKER "(System Announcement)"
   24 strcut pop
   "^WHITE^------------------------------------------------------------------------^RESET^"
   "^GREEN^  GLORIA: Glow Chat System                                ^FOREST^" 
-  "$Revision: 1.40 $" 1 strcut swap pop dup strlen 1 - strcut pop strcat
+  "$Revision: 1.41 $" 1 strcut swap pop dup strlen 1 - strcut pop strcat
   ": ^YELLOW^" ": " subst
   "^FOREST^  By Feaelin Moilar (Iain E. Davis)             ^YELLOW^"
   4 rotate dup strlen 24 swap - "                   " 
@@ -573,7 +576,10 @@ $def SYSTEMMARKER "(System Announcement)"
   getShortName getNetColor getShortName strcat 
   getNetSeparator strcat
   " " strcat
-  "%Y-%b-%d %X" systime timefmt strcat ": " strcat
+  3 pick "_preferences/glow-chat-system/timestamps?" getpropstr
+  "no" strcmp if
+    "%Y-%b-%d %X" systime timefmt strcat ": " strcat
+  then
   swap strcat
   getShortName getMessageColor "^MESSAGECOLOR^" subst
   getShortName getSayMessageColor "^SAYMESSAGECOLOR^" subst
@@ -1783,4 +1789,4 @@ q
 @register cmd-glow-chat-system=cmd/glow-chat-system
 @set $cmd/glow-chat-system=L
 @set $cmd/glow-chat-system=W3
-@set $cmd/glow-chat-system=_version:$Revision: 1.40 $
+@set $cmd/glow-chat-system=_version:$Revision: 1.41 $
