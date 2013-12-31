@@ -2,7 +2,7 @@ wh me=Beginning installation of cmd-glow-chat-system
 @prog cmd-glow-chat-system
 1 99999 d
 1 i
-( cmd-chat-system: $Date: 2012/04/29 00:22:23 $ $Revision: 1.41 $             )
+( cmd-chat-system: $Date: 2012/04/30 21:30:29 $ $Revision: 1.42 $             )
 ( Purpose: Provides a muckwide chat network                                   )
 ( Author: Feaelin Moilar                                                      )
 ( Contributors:                                                               )
@@ -12,7 +12,8 @@ wh me=Beginning installation of cmd-glow-chat-system
   TODO: There may be a stack error surrounding the 'allow list' stuff.
         Go into the menu and toggle the 'use allow list' option once or twice
         then exit the system.
-        * Make timestamping optional for the viewer
+        * Add method for player to easily toggle their timestamp preference
+        * Add banned players list management and the ban-blocking feature
         * Make timestamp format string configurable by the viewer
         * Allow viewer to turn off announcements any of the 4
         * Allow viewer to customize the colors to their own taste
@@ -21,6 +22,9 @@ wh me=Beginning installation of cmd-glow-chat-system
 )
 (
   $Log: cmd-glow-chat-system,v $
+  Revision 1.42  2012/04/30 21:30:29  feaelin
+  Made timestamps optional.
+
   Revision 1.41  2012/04/29 00:22:23  feaelin
   Blocked all use unless you can listen.
  
@@ -495,7 +499,7 @@ $def SYSTEMMARKER "(System Announcement)"
   24 strcut pop
   "^WHITE^------------------------------------------------------------------------^RESET^"
   "^GREEN^  GLORIA: Glow Chat System                                ^FOREST^" 
-  "$Revision: 1.41 $" 1 strcut swap pop dup strlen 1 - strcut pop strcat
+  "$Revision: 1.42 $" 1 strcut swap pop dup strlen 1 - strcut pop strcat
   ": ^YELLOW^" ": " subst
   "^FOREST^  By Feaelin Moilar (Iain E. Davis)             ^YELLOW^"
   4 rotate dup strlen 24 swap - "                   " 
@@ -522,16 +526,30 @@ $def SYSTEMMARKER "(System Announcement)"
     print-short-help exit
   then
   "HELP" menu-header
-  getShortName   " <message>        'says' <message> on the channel." strcat
-  getShortName   " :<message>       emotes <message> on the channel." strcat
-  getShortName   " /who             Lists players listening to the channel."
+  "^INFO^  "
+  getShortName   " <message>        ^NOTE^'says' <message> on the channel." strcat
+  strcat 
+  "^INFO^  "
+  getShortName   " :<message>       ^NOTE^emotes <message> on the channel." strcat
   strcat
-  getShortName   " /join            Begins listening on the channel." strcat
-  getShortName   " /unjoin          Stops listening on the channel." strcat
+  "^INFO^  "
+  getShortName   " /who             ^NOTE^Lists players listening to the channel."
+  strcat strcat
+  "^INFO^  "
+  getShortName   " /join            ^NOTE^Begins listening on the channel." strcat
+  strcat
+  "^INFO^  "
+  getShortName   " /unjoin          ^NOTE^Stops listening on the channel." strcat
+  strcat
   me @ "MAGE" flag? if
-    getShortName " /add             Adds a channel to the system." strcat
-    getShortName " /edit            Edits the channel." strcat
-    getShortName " /remove          Removes a channel from the system." strcat
+    "^INFO^  "
+    getShortName " /add             ^NOTE^Adds a channel to the system." strcat
+    strcat
+    "^INFO^  "
+    getShortName " /edit            ^NOTE^Edits the channel." strcat strcat
+    "^INFO^  "
+    getShortName " /remove          ^NOTE^Removes a channel from the system." strcat
+    strcat
     8 EDIT-ansi_display
   else
     5 EDIT-ansi_display
@@ -542,10 +560,12 @@ $def SYSTEMMARKER "(System Announcement)"
   dup 1 strcut pop
   ":;" swap  instr if ( If emote? )
     1 strcut swap pop
-    dup 1 strcut pop
-    ALPHACHARS swap instr if ( If alphanumeric )
-      " " swap strcat
-    then ( If Alphanumeric )
+    dup "" strcmp if
+      dup 1 strcut pop
+      ALPHACHARS swap instr if ( If alphanumeric )
+        " " swap strcat
+      then ( If Alphanumeric )
+    then
     swap if ( name prepend )
       me @ name swap strcat
     then ( name prepend )
@@ -578,7 +598,7 @@ $def SYSTEMMARKER "(System Announcement)"
   " " strcat
   3 pick "_preferences/glow-chat-system/timestamps?" getpropstr
   "no" strcmp if
-    "%Y-%b-%d %X" systime timefmt strcat ": " strcat
+    "%Y-%b-%d %X %Z" systime timefmt strcat ": " strcat
   then
   swap strcat
   getShortName getMessageColor "^MESSAGECOLOR^" subst
@@ -1670,7 +1690,7 @@ $def SYSTEMMARKER "(System Announcement)"
   ( To make it difficult to fake chat system messages )
   "" SYSTEMMARKER subst
 
-  me @ canListen? not if
+  me @ canListen? me @ "MAGE" flag? or not if
     me @ "huh_mesg" sysparm "^INFO^" swap strcat ansi_notify
     exit
   then
@@ -1789,4 +1809,4 @@ q
 @register cmd-glow-chat-system=cmd/glow-chat-system
 @set $cmd/glow-chat-system=L
 @set $cmd/glow-chat-system=W3
-@set $cmd/glow-chat-system=_version:$Revision: 1.41 $
+@set $cmd/glow-chat-system=_version:$Revision: 1.42 $
