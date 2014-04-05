@@ -2,7 +2,7 @@ wh me=Beginning installation of cmd-glow-chat-system
 @prog cmd-glow-chat-system
 1 99999 d
 1 i
-( cmd-chat-system: $Date: 2012/04/30 21:30:29 $ $Revision: 1.42 $             )
+( cmd-chat-system: $Date: 2013/12/31 21:10:50 $ $Revision: 1.43 $             )
 ( Purpose: Provides a muckwide chat network                                   )
 ( Author: Feaelin Moilar                                                      )
 ( Contributors:                                                               )
@@ -19,151 +19,6 @@ wh me=Beginning installation of cmd-glow-chat-system
         * Allow viewer to customize the colors to their own taste
         * Easier Color Selection?
         * Checkconfiguration should check for the connect/disconnect props
-)
-(
-  $Log: cmd-glow-chat-system,v $
-  Revision 1.42  2012/04/30 21:30:29  feaelin
-  Made timestamps optional.
-
-  Revision 1.41  2012/04/29 00:22:23  feaelin
-  Blocked all use unless you can listen.
- 
-  Revision 1.40  2012/04/29 00:18:49  feaelin
-  If you don't have permission to use a channel, it now gives you a 'huh' if you try to use it.
- 
-  Revision 1.39  2012/04/27 21:39:59  feaelin
-  Fixed issue where join announces weren't being announced.
- 
-  Revision 1.38  2012/04/25 17:41:14  feaelin
-  Fixed problem where active/inactive wasn't displaying.
- 
-  Revision 1.37  2012/04/22 13:30:50  feaelin
-  Added word to check on the configuration settings
-  Such as the registry entry and basic command presence.
- 
-  Revision 1.36  2012/04/22 13:18:47  feaelin
-  Fixed autoOnOff from executing if connecting connection is a duplicate.
-  Added configuration check for the $chat/chatobject registry entry.
- 
-  Revision 1.35  2012/04/22 13:01:53  feaelin
-  Added the auto on or auto off feature.
- 
-  Revision 1.34  2012/04/21 21:17:25  feaelin
-  Tighted code in connectAnnouncement
- 
-  Revision 1.33  2011/07/06 16:15:50  feaelin
-  Added timestamps to the output.
- 
-  Revision 1.32  2011/03/08 18:45:44  feaelin
-  Completed /list. It now shows the channel short name and talk ability of
-  user.
- 
-  Revision 1.31  2011/03/01 01:33:27  feaelin
-  Added list based access for channels.
- 
-  Revision 1.30  2011/02/27 18:40:02  feaelin
-  Started the /list command
- 
-  Revision 1.29  2010/08/19 12:31:08  Feaelin
-  Refactored whoChannelHelper so that it accepts an address of the
-  printWhoLine word/function to be used. In later iterations, this will allow
-  for different printWhoLine functions to be used depending on what output we
-  want.
- 
-  Revision 1.28  2010/08/19 12:16:36  Feaelin
-  Refactored /who so that I can use the internal code for the version of /who
-  that reports on all channels.
- 
-  Revision 1.27  2010/08/19 12:06:17  Feaelin
-  Cleaned up the column sizes for /who.
- 
-  Revision 1.26  2009/09/29 18:32:29  feaelin
-  Added a strip so that . /help worked correctly.
- 
-  Revision 1.25  2009/05/24 16:18:04  feaelin
-  Cleaned up some of the help displays
- 
-  Revision 1.24  2009/05/20 17:20:54  feaelin
-  Fixed print-help output problem.
-  Adjusted so that the code strips leading spaces.
- 
-  Revision 1.23  2009/05/20 16:23:06  feaelin
-  Needs to be W3 to support @aliases
- 
-  Revision 1.22  2009/05/20 16:03:58  feaelin
-  Fixed issue with disconnect...it was missing a getShortName
- 
-  Revision 1.21  2009/05/20 15:30:51  feaelin
-  Eh. greater than 1, not less than 2.
- 
-  Revision 1.20  2009/05/20 15:27:08  feaelin
-  Removed enter/leave from help still exist as aliases of join/unjoin
-  Changed announceDisconnect so that it only announces if number
-  of connections for the dbref is < 2.
- 
-  Revision 1.19  2009/05/20 15:24:02  feaelin
-  Added on/off as aliases of join/unjoin
- 
-  Revision 1.18  2009/05/18 22:42:44  feaelin
-  Oops. connect announcement now actually checks if the
-  player is listening before announcing there connect on a channel.
- 
-  Revision 1.17  2009/05/18 22:24:32  feaelin
-  Add announcements of join/ujoin/connect/disconnect
-  Fixed bug where capitals after emote would despace
- 
-  Revision 1.16  2009/05/13 20:23:02  feaelin
-  Refactored NotifyPlayer so that it works with the buildMessage function
- 
-  Revision 1.15  2009/05/13 18:13:14  feaelin
-  Completed logMessage
-  Added buildMessage, a more generic function to build the message string.
- 
-  Revision 1.14  2009/05/13 16:01:40  feaelin
-  Moved color editing to its own menu.
- 
-  Revision 1.13  2009/05/05 15:43:14  feaelin
-  Revised help so that it has a 'basic' version for the
-  non-channel specific commands
- 
-  Revision 1.12  2009/05/04 19:01:15  feaelin
-  Updated /who to show who can talk
-  Refactored canTalk? to return "" or error and be generic
- 
-  Revision 1.11  2009/05/03 18:49:18  feaelin
-  Updated menu header
- 
-  Revision 1.10  2009/05/03 18:47:17  feaelin
-  Updated help.
- 
-  Revision 1.9  2009/05/03 18:43:51  feaelin
-  color codes in upper case
- 
-  Revision 1.8  2009/05/03 18:09:06  feaelin
-  /who added
- 
-  Revision 1.7  2009/05/01 23:09:24  feaelin
-  Updated help.
- 
-  Revision 1.6  2009/04/30 01:26:37  feaelin
-  Added /join to channel.
- 
-  Revision 1.5  2009/04/28 18:21:27  feaelin
-  Added permissions editor; support for yes/no permissions done.
- 
-  Revision 1.4  2009/04/28 17:15:13  feaelin
-  Removed vestigial prompted channel edit
-  Added code to channel editor so that the exit name/alias list is updated.
- 
-  Revision 1.3  2009/04/28 16:55:54  feaelin
-  Completed add menu.
- 
-  Revision 1.2  2009/04/26 14:29:53  feaelin
-  Fixed various installer script issues caused by the rename.
- 
-  Revision 1.1  2009/04/26 14:25:08  feaelin
-  Initial revision
-
 )
 ( --------------------------------------------------------------------------- )
  
@@ -499,7 +354,7 @@ $def SYSTEMMARKER "(System Announcement)"
   24 strcut pop
   "^WHITE^------------------------------------------------------------------------^RESET^"
   "^GREEN^  GLORIA: Glow Chat System                                ^FOREST^" 
-  "$Revision: 1.42 $" 1 strcut swap pop dup strlen 1 - strcut pop strcat
+  "$Revision: 1.43 $" 1 strcut swap pop dup strlen 1 - strcut pop strcat
   ": ^YELLOW^" ": " subst
   "^FOREST^  By Feaelin Moilar (Iain E. Davis)             ^YELLOW^"
   4 rotate dup strlen 24 swap - "                   " 
@@ -1685,16 +1540,16 @@ $def SYSTEMMARKER "(System Announcement)"
 : main ( s-args -- )
   ( To prevent programmers from calling this after overwriting 'me' )
   "me" match me !
-
+ 
   strip
   ( To make it difficult to fake chat system messages )
   "" SYSTEMMARKER subst
-
+ 
   me @ canListen? me @ "MAGE" flag? or not if
     me @ "huh_mesg" sysparm "^INFO^" swap strcat ansi_notify
     exit
   then
-
+ 
   dup STR-blank? if
     checkConfiguration
     pop
@@ -1809,4 +1664,4 @@ q
 @register cmd-glow-chat-system=cmd/glow-chat-system
 @set $cmd/glow-chat-system=L
 @set $cmd/glow-chat-system=W3
-@set $cmd/glow-chat-system=_version:$Revision: 1.42 $
+@set $cmd/glow-chat-system=_version:$Revision: 1.43 $
