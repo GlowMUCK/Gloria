@@ -1,11 +1,12 @@
-wh me=Beginning installation of cmd-glow-chat-system
+wh me=Beginning installation of cmd-glow-chat-system.
+@teleport $cmd/glow-chat-system=me
 @prog cmd-glow-chat-system
-1 99999 d
+1 999999 d
 1 i
 ( cmd-chat-system: $Date: 2013/12/31 21:10:50 $ $Revision: 1.43 $             )
 ( Purpose: Provides a muckwide chat network                                   )
+( Repository: https://github.com/GlowMUCK/Gloria                              )
 ( Author: Feaelin Moilar                                                      )
-( Contributors:                                                               )
 ( Dependencies: lib-strings, lib-edit, lib-case, lib-lmgr, lib-match          )
 ( --------------------------------------------------------------------------- )
 (
@@ -18,7 +19,6 @@ wh me=Beginning installation of cmd-glow-chat-system
         * Allow viewer to turn off announcements any of the 4
         * Allow viewer to customize the colors to their own taste
         * Easier Color Selection?
-        * Checkconfiguration should check for the connect/disconnect props
 )
 ( --------------------------------------------------------------------------- )
  
@@ -33,10 +33,15 @@ $def CHANNELDIR "/Channels/"
 $def ALIASDIR   "/Aliases/"
 $def ALPHACHARS "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"
 $def SYSTEMMARKER "(System Announcement)"
- 
+
+$def CONNECT_PROPERTY    "/~connect/gloria"
+$def DISCONNECT_PROPERTY "/~disconnect/gloria"
+$def REGISTRATION_NAME   "$cmd/glow-chat-system"
+$def CHAT_TRIGGER_NAME   "$chat/chatobject"
+
 : DBITEM
   trig dup #-1 dbcmp if
-    pop "$chat/chatobject" match
+    pop CHAT_TRIGGER_NAME match
   then
 ;
  
@@ -1509,31 +1514,72 @@ $def SYSTEMMARKER "(System Announcement)"
   REPEAT
 ;
  
-: checkConfiguration ( -- )
-  "$chat/chatobject" match dup ok? if
+( Confirm that the chat trigger object is setup correctly. )
+: checkChatTrigger ( -- boolean )
+  CHAT_TRIGGER_NAME match dup ok? if
     dup exit? swap trig dbcmp and not if
       me @ "ARCHWIZARD" flag? if
         #0 "_reg/chat/chatobject" trig setprop
+        1
       else
-        me @ "^FAIL^WARNING! The chat system exit is incorrectly configured. Notify a W3+ staff member." ansi_notify
+        0
       then
+    else
+      1
     then
   else
     me @ "ARCHWIZARD" flag? if
       #0 "_reg/chat/chatobject" trig setprop
+      1
     else
-      me @ "^FAIL^WARNING! The chat system exit is incorrectly configured. Notify a W3+ staff member." ansi_notify
+      0
     then
   then
-  trig name "gloria" instr not if
+;
+
+( Check that essential commands are set in the alias list of the command list )
+: checkCommand ( s-command -- boolean )
+  trig name over instr if
+    pop
+    1
+  else
     me @ "ARCHWIZARD" flag? if
-      trig name "gloria;" swap strcat trig swap setname
+      trig name
+      swap ";" strcat swap strcat
+      trig swap setname
+      1
+    else
+      pop
+      0
     then
   then
-  trig name "gcs" instr not if
+;
+ 
+( Check that the connect or disconnect property is set correctly )
+: checkConnectProp ( s-property -- boolean )
+  #0 over getpropstr REGISTRATION_NAME strcmp if
     me @ "ARCHWIZARD" flag? if
-      trig name "gcs;" swap strcat trig swap setname
+      #0 swap REGISTRATION_NAME setprop
+      1
+    else
+      pop
+      0
     then
+  else
+    pop
+    1
+  then
+;
+
+( Check that chat is setup correctly )
+: checkSetup ( -- )
+  checkChatTrigger
+  "gloria" checkCommand
+  "gcs" checkCommand
+  CONNECT_PROPERTY checkConnectProp
+  DISCONNECT_PROPERTY checkConnectProp
+  and and and and not if
+    me @ "^FAIL^WARNING! There are configuration problems. Notify a W3+ staff member." ansi_notify
   then
 ;
  
@@ -1545,17 +1591,19 @@ $def SYSTEMMARKER "(System Announcement)"
   ( To make it difficult to fake chat system messages )
   "" SYSTEMMARKER subst
  
+  ( Make it appear that a channel we can't listen to isn't there )
   me @ canListen? me @ "MAGE" flag? or not if
     me @ "huh_mesg" sysparm "^INFO^" swap strcat ansi_notify
     exit
   then
  
   dup STR-blank? if
-    checkConfiguration
+    checkSetup
     pop
     print-help
     exit
   then
+  
   dup "Connect" strcmp not if
     ( This prevents someone from triggering an announcement by hand )
     trig #-1 dbcmp if
@@ -1568,13 +1616,16 @@ $def SYSTEMMARKER "(System Announcement)"
       exit
     then
   then
+
   dup "Disconnect" strcmp not if
     ( This prevents someone from triggering an announcement by hand )
     trig #-1 dbcmp if
       pop disconnectAnnouncement exit
     then
   then
-  checkConfiguration
+
+  checkSetup
+
   dup STR-command dup "" strcmp not if
     pop
     me @ canTalk? dup STR-blank? if
