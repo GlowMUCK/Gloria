@@ -3,7 +3,7 @@ wh me=Beginning installation of cmd-glow-chat-system.
 @prog cmd-glow-chat-system
 1 999999 d
 1 i
-( cmd-chat-system: $Date: 2013/12/31 21:10:50 $ $Revision: 1.43 $             )
+( cmd-chat-system: $Revision: 1.44 $                                          )
 ( Purpose: Provides a muckwide chat network                                   )
 ( Repository: https://github.com/GlowMUCK/Gloria                              )
 ( Author: Feaelin Moilar                                                      )
@@ -13,7 +13,6 @@ wh me=Beginning installation of cmd-glow-chat-system.
   TODO: There may be a stack error surrounding the 'allow list' stuff.
         Go into the menu and toggle the 'use allow list' option once or twice
         then exit the system.
-        * Add method for player to easily toggle their timestamp preference
         * Add banned players list management and the ban-blocking feature
         * Make timestamp format string configurable by the viewer
         * Allow viewer to turn off announcements any of the 4
@@ -34,10 +33,12 @@ $def ALIASDIR   "/Aliases/"
 $def ALPHACHARS "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"
 $def SYSTEMMARKER "(System Announcement)"
 
-$def CONNECT_PROPERTY    "/~connect/gloria"
-$def DISCONNECT_PROPERTY "/~disconnect/gloria"
-$def REGISTRATION_NAME   "$cmd/glow-chat-system"
-$def CHAT_TRIGGER_NAME   "$chat/chatobject"
+$def CONNECT_PROPERTY     "/~connect/gloria"
+$def DISCONNECT_PROPERTY  "/~disconnect/gloria"
+$def REGISTRATION_NAME    "$cmd/glow-chat-system"
+$def CHAT_TRIGGER_NAME    "$chat/chatobject"
+$def PREFERENCE_DIRECTORY "_preferences/glow-chat-system/"
+$def PREFERENCE_TIMESTAMP "timestamps?"
 
 : DBITEM
   trig dup #-1 dbcmp if
@@ -110,6 +111,17 @@ $def CHAT_TRIGGER_NAME   "$chat/chatobject"
  
 : getUseAllowedPlayerList ( S-ShortName -- S-Status )
   DBITEM CHANNELDIR rot strcat "/UseAllowedPlayerList" strcat getpropval
+;
+ 
+: toggleTimestampPreference ( -- )
+  me @ PREFERENCE_DIRECTORY PREFERENCE_TIMESTAMP strcat getpropval
+  if
+    me @ PREFERENCE_DIRECTORY PREFERENCE_TIMESTAMP strcat 0 setprop
+    me @ "^SUCC^Timestamps turned on for all channels." ansi_notify
+  else
+    me @ PREFERENCE_DIRECTORY PREFERENCE_TIMESTAMP strcat 1 setprop
+    me @ "^SUCC^Timestamps turned off for all channels." ansi_notify
+  then
 ;
  
 : toggleUseAllowedPlayerList ( S-ShortName -- )
@@ -398,9 +410,8 @@ $def CHAT_TRIGGER_NAME   "$chat/chatobject"
   "^INFO^  "
   getShortName   " /join            ^NOTE^Begins listening on the channel." strcat
   strcat
-  "^INFO^  "
-  getShortName   " /unjoin          ^NOTE^Stops listening on the channel." strcat
-  strcat
+  "^INFO^  " getShortName   " /unjoin          ^NOTE^Stops listening on the channel." strcat strcat
+  "^INFO^  " getShortName   " /timestamp       ^NOTE^Toggle the display of timestamps." strcat strcat
   me @ "MAGE" flag? if
     "^INFO^  "
     getShortName " /add             ^NOTE^Adds a channel to the system." strcat
@@ -410,9 +421,9 @@ $def CHAT_TRIGGER_NAME   "$chat/chatobject"
     "^INFO^  "
     getShortName " /remove          ^NOTE^Removes a channel from the system." strcat
     strcat
-    8 EDIT-ansi_display
+    9 EDIT-ansi_display
   else
-    5 EDIT-ansi_display
+    6 EDIT-ansi_display
   then
 ;
  
@@ -456,8 +467,9 @@ $def CHAT_TRIGGER_NAME   "$chat/chatobject"
   getShortName getNetColor getShortName strcat 
   getNetSeparator strcat
   " " strcat
-  3 pick "_preferences/glow-chat-system/timestamps?" getpropstr
-  "no" strcmp if
+  3 pick
+  PREFERENCE_DIRECTORY PREFERENCE_TIMESTAMP strcat getpropval
+  not if
     "%Y-%b-%d %X %Z" systime timefmt strcat ": " strcat
   then
   swap strcat
@@ -1514,7 +1526,6 @@ $def CHAT_TRIGGER_NAME   "$chat/chatobject"
   REPEAT
 ;
  
-( Confirm that the chat trigger object is setup correctly. )
 : checkChatTrigger ( -- boolean )
   CHAT_TRIGGER_NAME match dup ok? if
     dup exit? swap trig dbcmp and not if
@@ -1537,7 +1548,6 @@ $def CHAT_TRIGGER_NAME   "$chat/chatobject"
   then
 ;
 
-( Check that essential commands are set in the alias list of the command list )
 : checkCommand ( s-command -- boolean )
   trig name over instr if
     pop
@@ -1555,7 +1565,6 @@ $def CHAT_TRIGGER_NAME   "$chat/chatobject"
   then
 ;
  
-( Check that the connect or disconnect property is set correctly )
 : checkConnectProp ( s-property -- boolean )
   #0 over getpropstr REGISTRATION_NAME strcmp if
     me @ "ARCHWIZARD" flag? if
@@ -1571,7 +1580,6 @@ $def CHAT_TRIGGER_NAME   "$chat/chatobject"
   then
 ;
 
-( Check that chat is setup correctly )
 : checkSetup ( -- )
   checkChatTrigger
   "gloria" checkCommand
@@ -1694,6 +1702,11 @@ $def CHAT_TRIGGER_NAME   "$chat/chatobject"
   dup "unjoin" strcmp not if
     pop pop
     1 unJoinChannel
+    exit
+  then
+  dup "timestamp" strcmp not if
+    pop pop
+    toggleTimestampPreference
     exit
   then
   dup "leave" strcmp not if
